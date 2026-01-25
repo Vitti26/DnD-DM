@@ -1,0 +1,29 @@
+/* Estilo personalizado de Pergamino */
+@import "tailwindcss";
+
+.bg-pergamino {
+    background-color: #f5e6d3;
+    /* Textura de ruido sutil para que no parezca un color sólido */
+    background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+
+.borde-medieval {
+    border: 20px solid transparent;
+    /* Usamos un borde de imagen o un degradado complejo */
+    border-image: url("https://www.transparenttextures.com/patterns/dark-matter.png") 30 round;
+    outline: 4px double #5d4037;
+    outline-offset: -12px;
+}
+
+/* Efecto de desvanecimiento en los bordes para que no se vea cortado */
+.fade-edges {
+    mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent);
+}
+
+/* Tipografía de fantasía para el DM (opcional si tienes la fuente) */
+.font-adventure {
+    font-family: 'Georgia', serif;
+    line-height: 1.6;
+}
