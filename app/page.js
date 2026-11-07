@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
     UserPlus,
     Heart,
@@ -230,6 +231,10 @@ export default function Home() {
                             <Sword size={16} /> Iniciar Aventura
                         </button>
                     )}
+
+                    <Link href="/dm" className="flex items-center gap-2 text-red-300 hover:text-white transition-colors text-sm w-full font-semibold">
+                        <Sword size={16} /> Panel del DM
+                    </Link>
 
                     <button className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm w-full text-left">
                         <ScrollText size={16} /> Ver Log de Misión
