@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { User, LogOut, Shield, UserPlus, LogIn } from 'lucide-react';
+import { User, LogOut, Shield, UserPlus, LogIn, Users } from 'lucide-react';
 
 export function UserNav() {
     const [usuario, setUsuario] = useState(null);
@@ -96,7 +96,16 @@ export function UserNav() {
     }
 
     return (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+                href="/parties"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:text-amber-100 bg-amber-950/60 hover:bg-amber-900/70 border border-amber-800/50 rounded-lg transition-all"
+                title="Salas multijugador online"
+            >
+                <Users size={14} className="text-amber-400" />
+                <span className="hidden sm:inline">Parties</span>
+            </Link>
+
             <Link
                 href="/personajes"
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:text-amber-100 bg-stone-900/80 hover:bg-stone-800 border border-amber-900/40 rounded-lg transition-all"
@@ -123,3 +132,4 @@ export function UserNav() {
         </div>
     );
 }
+

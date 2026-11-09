@@ -24,6 +24,7 @@ export default function PartidaEnVivo({ params }) {
     const [inputUsuario, setInputUsuario] = useState("");
     const [procesando, setProcesando] = useState(false);
     const [errorAviso, setErrorAviso] = useState(null);
+    const [usuarioActual, setUsuarioActual] = useState(null);
     const ultimoMensajeRef = useRef("");
     const messagesEndRef = useRef(null);
 
@@ -50,12 +51,29 @@ export default function PartidaEnVivo({ params }) {
 
     // 1. Carga inicial y suscripción a Realtime
     useEffect(() => {
+        let mounted = true;
+
         const cargarPartida = async () => {
-            // Verificación de sesión: si no hay usuario, redirigir a login
             const { data: { session } } = await supabase.auth.getSession();
             if (!session?.user) {
-                router.push('/login');
+                router.push(`/login?redirect=/juego/${id}`);
                 return;
+            }
+
+            // Consultar datos de perfil del usuario logueado
+            const { data: perfil } = await supabase
+                .from('perfiles')
+                .select('nombre_usuario')
+                .eq('id', session.user.id)
+                .single();
+
+            const nombreU = perfil?.nombre_usuario ||
+                session.user.user_metadata?.nombre_usuario ||
+                session.user.email?.split('@')[0] ||
+                'Aventurero';
+
+            if (mounted) {
+                setUsuarioActual({ id: session.user.id, nombre_usuario: nombreU });
             }
 
             const { data, error } = await supabase
@@ -64,14 +82,14 @@ export default function PartidaEnVivo({ params }) {
                 .eq('id', id)
                 .single();
 
-            if (data) {
+            if (data && mounted) {
                 setJugadores(data.jugadores || []);
                 setHistorial(data.historial || []);
                 setIdioma(data.idioma || 'es');
                 setEnCombate(Boolean(data.en_combate));
                 setTurnoIndex(Number(data.turno_index) || 0);
                 setCargando(false);
-            } else {
+            } else if (!data) {
                 console.error("Partida no encontrada:", error);
                 alert("No se encontró la partida o hubo un error de conexión.");
                 router.push('/');
@@ -111,7 +129,7 @@ export default function PartidaEnVivo({ params }) {
                 setTimeout(() => setAlguienIn(false), 3000);
             })
             .subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
+                if (status === 'SUBSCRIBED' && mounted) {
                     await channel.track({
                         online_at: new Date().toISOString(),
                     });
@@ -119,6 +137,7 @@ export default function PartidaEnVivo({ params }) {
             });
 
         return () => {
+            mounted = false;
             supabase.removeChannel(channel);
         };
     }, [id, setJugadores, setHistorial, setIdioma, setEnCombate, setTurnoIndex, router]);
@@ -138,6 +157,11 @@ export default function PartidaEnVivo({ params }) {
         }
     };
 
+    // Identificar el personaje del usuario actual en esta mesa
+    const miPersonajeEnMesa = jugadores.find(j => j.usuario_id === usuarioActual?.id);
+    const personajeTurnoActivo = jugadores[turnoIndex];
+    const esMiTurno = !enCombate || !personajeTurnoActivo?.usuario_id || (personajeTurnoActivo?.usuario_id === usuarioActual?.id);
+
     // Envío de mensaje centralizado
     const enviarMensajeTexto = useCallback(async (textoAEnviar) => {
         const textoLimpio = (textoAEnviar || "").trim();
@@ -146,29 +170,40 @@ export default function PartidaEnVivo({ params }) {
         setErrorAviso(null);
         ultimoMensajeRef.current = textoLimpio;
 
-        const nuevoMensajeUsuario = { rol: "usuario", texto: textoLimpio };
+        const autorNombre = usuarioActual?.nombre_usuario || "Aventurero";
+        const personajeNombre = miPersonajeEnMesa ? miPersonajeEnMesa.nombre : null;
 
-        // 1. Actualización optimista local del mensaje del usuario
+        const nuevoMensajeUsuario = {
+            rol: "usuario",
+            texto: textoLimpio,
+            autor: autorNombre,
+            personaje: personajeNombre
+        };
+
+        // 1. Actualización optimista local
         addMensaje(nuevoMensajeUsuario);
         setInputUsuario("");
         setProcesando(true);
 
-        // Guardamos copia del historial actual ANTES de este mensaje para enviárselo a la IA
         const historialParaIA = [...historial];
         const historialConUsuario = [...historial, nuevoMensajeUsuario];
 
-        // AbortController con timeout de 45 segundos
+        // Texto contextualizado para que la IA sepa qué aventurero habla
+        const textoParaGemini = personajeNombre
+            ? `${personajeNombre} (${autorNombre}) dice o realiza: ${textoLimpio}`
+            : `${autorNombre} dice: ${textoLimpio}`;
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 45000);
 
         try {
-            // 2. Llamada a la API de Gemini (mandamos el historial SIN el mensaje nuevo)
+            // 2. Llamada a la API de Gemini
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 signal: controller.signal,
                 body: JSON.stringify({
-                    mensaje: textoLimpio,
+                    mensaje: textoParaGemini,
                     jugadores,
                     idioma,
                     historial: historialParaIA
@@ -189,7 +224,7 @@ export default function PartidaEnVivo({ params }) {
             let newEnCombate = enCombate;
             let newTurnoIndex = turnoIndex;
 
-            // 3. Procesar bloque [UPDATE] si la IA cambió estados de vida/combate
+            // 3. Procesar bloque [UPDATE]
             const regex = /\[UPDATE\]([\s\S]*?)\[\/UPDATE\]/;
             const match = aiText.match(regex);
 
@@ -203,7 +238,6 @@ export default function PartidaEnVivo({ params }) {
                             if (original && p.hp !== undefined) {
                                 const delta = Number(p.hp) - Number(original.hp);
                                 if (delta !== 0) {
-                                    // Sincronización atómica por RPC para evitar race conditions
                                     await supabase.rpc('update_player_hp', {
                                         p_partida_id: id,
                                         p_player_id: original.id,
@@ -213,7 +247,6 @@ export default function PartidaEnVivo({ params }) {
                             }
                         }
 
-                        // Actualización optimista en UI
                         updatedJugadores = updatedJugadores.map(orig => {
                             const chg = jsonUpdate.jugadores.find(j => j.id === orig.id || j.nombre === orig.nombre);
                             return chg ? { ...orig, ...chg } : orig;
@@ -237,7 +270,7 @@ export default function PartidaEnVivo({ params }) {
                 }
             }
 
-            // 4. Mostrar respuesta del DM INMEDIATAMENTE en el estado local (no depende de Realtime)
+            // 4. Mostrar respuesta del DM inmediatamente
             const nuevoMensajeDM = { rol: "dm", texto: aiText };
             addMensaje(nuevoMensajeDM);
 
@@ -269,7 +302,7 @@ export default function PartidaEnVivo({ params }) {
         } finally {
             setProcesando(false);
         }
-    }, [id, jugadores, idioma, historial, enCombate, turnoIndex, procesando, addMensaje, setJugadores, setEnCombate, setTurnoIndex]);
+    }, [id, jugadores, idioma, historial, enCombate, turnoIndex, procesando, addMensaje, setJugadores, setEnCombate, setTurnoIndex, usuarioActual, miPersonajeEnMesa]);
 
     const enviarMensaje = () => {
         enviarMensajeTexto(inputUsuario);
@@ -323,8 +356,8 @@ export default function PartidaEnVivo({ params }) {
                 <button onClick={() => setMenuAbierto(true)}>
                     <Menu size={24} />
                 </button>
-                <div className="flex items-center gap-2 font-bold">
-                    <Dices className="w-5 h-5" /> <span>Mesa Arcana</span>
+                <div className="flex items-center gap-2 font-bold font-serif text-amber-200">
+                    <Dices className="w-5 h-5 text-amber-400" /> <span>Mesa Arcana</span>
                 </div>
                 <span className="text-xs bg-slate-700 px-2 py-1 rounded-full">{jugadores.length} PJ</span>
             </header>
@@ -359,16 +392,24 @@ export default function PartidaEnVivo({ params }) {
                 </div>
 
                 <div className="space-y-4 flex-1 overflow-y-auto h-[calc(100vh-160px)] md:h-auto">
-                    {jugadores.map((j, index) => (
-                        <div key={j.id} className="relative">
-                            {enCombate && turnoIndex === index && (
-                                <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-red-500 animate-bounce">
-                                    <Sword size={16} />
-                                </div>
-                            )}
-                            <PlayerCard jugador={j} />
-                        </div>
-                    ))}
+                    {jugadores.map((j, index) => {
+                        const esMiPersonaje = j.usuario_id === usuarioActual?.id;
+                        return (
+                            <div key={j.id} className="relative">
+                                {enCombate && turnoIndex === index && (
+                                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-red-500 animate-bounce">
+                                        <Sword size={16} />
+                                    </div>
+                                )}
+                                {esMiPersonaje && (
+                                    <span className="absolute right-2 top-2 z-10 text-[9px] bg-amber-900/80 text-amber-200 border border-amber-600/40 font-bold px-1.5 py-0.5 rounded">
+                                        Tu Héroe
+                                    </span>
+                                )}
+                                <PlayerCard jugador={j} />
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-slate-700 space-y-2">
@@ -382,6 +423,10 @@ export default function PartidaEnVivo({ params }) {
                             <Sword size={14} className="group-hover:rotate-45 transition-transform" />
                         </button>
                     )}
+
+                    <Link href="/parties" className="flex items-center gap-2 text-amber-300 hover:text-white transition-colors text-xs w-full py-1 font-semibold">
+                        <Users size={14} /> Salón de Parties
+                    </Link>
 
                     <button className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm w-full text-left">
                         <ScrollText size={16} /> Ver Log de Misión
@@ -427,7 +472,7 @@ export default function PartidaEnVivo({ params }) {
                                 </p>
                                 <button
                                     onClick={() => enviarMensajeTexto("¡Comencemos la aventura! Describe la escena inicial de dónde nos encontramos y qué desafío tenemos enfrente.")}
-                                    className="px-5 py-2.5 bg-amber-800 hover:bg-amber-700 text-amber-50 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all hover:scale-105 flex items-center gap-2 mx-auto"
+                                    className="px-5 py-2.5 bg-amber-800 hover:bg-amber-700 text-amber-50 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all hover:scale-105 flex items-center gap-2 mx-auto cursor-pointer"
                                 >
                                     <Sword size={14} /> Comenzar Aventura
                                 </button>
@@ -442,7 +487,7 @@ export default function PartidaEnVivo({ params }) {
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Aviso visible de error con botón de reintento */}
+                {/* Aviso visible de error */}
                 {errorAviso && (
                     <div className="mx-4 mb-2 p-3 bg-red-950/90 border border-red-500/60 rounded-xl text-red-200 text-xs flex justify-between items-center shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2">
                         <div className="flex items-center gap-2">
@@ -456,6 +501,20 @@ export default function PartidaEnVivo({ params }) {
                             >
                                 <RotateCcw size={12} /> Reintentar
                             </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Control de combate por turnos: indicador de turno */}
+                {enCombate && personajeTurnoActivo && (
+                    <div className="mx-4 mb-2 p-2 bg-amber-950/80 border border-amber-600/40 rounded-xl text-xs flex justify-between items-center text-amber-200">
+                        <span className="flex items-center gap-1.5 font-semibold">
+                            <Sword size={14} className="text-red-400 animate-pulse" />
+                            Turno de acción: <strong className="text-white">{personajeTurnoActivo.nombre}</strong>
+                            {personajeTurnoActivo.usuario_id === usuarioActual?.id ? ' (¡Te toca!)' : ''}
+                        </span>
+                        {!esMiTurno && (
+                            <span className="text-[11px] text-amber-400/80 italic">Esperando su tirada o acción...</span>
                         )}
                     </div>
                 )}
