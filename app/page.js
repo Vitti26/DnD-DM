@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { UserNav } from './components/UserNav';
+import { DragonCorner } from './components/ui/DragonCorner';
+import { BannerTitulo } from './components/ui/BannerTitulo';
+import { VitralDM } from './components/ui/VitralDM';
 import {
     UserPlus,
     Dices,
@@ -12,7 +15,8 @@ import {
     Sword,
     ScrollText,
     Sparkles,
-    Shield
+    Shield,
+    Users
 } from 'lucide-react';
 
 import { PlayerCard } from './components/PlayerCard';
@@ -52,7 +56,6 @@ export default function Home() {
         setIsClient(true);
         if (historial?.length > 0) setJuegoIniciado(true);
 
-        // Cargar personajes propios si hay sesión
         const cargarPersonajesGuardados = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
@@ -105,6 +108,8 @@ export default function Home() {
                 raza: razaTmp,
                 clase: claseTmp,
                 hp: claseTmp === "Bárbaro" ? 14 : claseTmp === "Guerrero" ? 12 : 10,
+                hp_max: claseTmp === "Bárbaro" ? 14 : claseTmp === "Guerrero" ? 12 : 10,
+                ca: claseTmp === "Paladín" || claseTmp === "Guerrero" ? 16 : 12,
                 nivel: 1,
                 inventario: ["Raciones (5 días)", "Odre de agua"]
             };
@@ -191,42 +196,42 @@ export default function Home() {
     if (!isClient) return null;
 
     return (
-        <main className="flex h-screen w-full bg-slate-900 overflow-hidden relative">
+        <main className="flex h-screen w-full bg-[#18110c] overflow-hidden relative">
 
             {/* SIDEBAR (Compañía) */}
             <aside className={`
-                fixed inset-y-0 left-0 z-[60] w-80 bg-slate-900 border-r border-slate-700 p-4 transform transition-transform duration-300 ease-in-out
+                fixed inset-y-0 left-0 z-[60] w-80 bg-[#140c08] border-r-2 border-[#3d2716] p-4 transform transition-transform duration-300 ease-in-out flex flex-col
                 md:relative md:translate-x-0 
                 ${menuAbierto ? 'translate-x-0' : '-translate-x-full'}
             `}>
-                <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-2 text-slate-400">
-                        <UserPlus size={20} />
-                        <h2 className="font-bold uppercase tracking-widest text-sm text-white">Tu Compañía</h2>
+                <div className="flex justify-between items-center mb-4 pb-3 border-b border-[#3d2716]">
+                    <div className="flex items-center gap-2 text-[#c8a45a]">
+                        <UserPlus size={18} />
+                        <h2 className="font-cinzel font-bold uppercase tracking-wider text-xs text-amber-100">Tu Compañía</h2>
                     </div>
 
                     <button
                         onClick={() => toggleCombate()}
-                        className={`text-[10px] px-2 py-1 rounded font-bold transition-all ${enCombate
-                            ? 'bg-red-600 text-white animate-pulse shadow-[0_0_10px_rgba(220,38,38,0.5)]'
-                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        className={`text-[10px] font-cinzel px-2.5 py-1 rounded font-bold uppercase tracking-wider transition-all border ${enCombate
+                            ? 'bg-[#7b1f1f] text-[#fef08a] border-[#c8a45a] animate-pulse shadow-[0_0_12px_rgba(123,31,31,0.8)]'
+                            : 'bg-[#241510] text-[#c8a45a] border-[#3d2716] hover:bg-[#3d2716]'
                             }`}
                     >
-                        {enCombate ? '⚔️ EN COMBATE' : 'INICIAR COMBATE'}
+                        {enCombate ? '⚔️ Combate' : '⚔️ Iniciar'}
                     </button>
                 </div>
 
-                <div className="space-y-4 flex-1 overflow-y-auto h-[calc(100vh-280px)] md:h-auto">
+                <div className="space-y-3.5 flex-1 overflow-y-auto pr-1">
                     {jugadores.length === 0 ? (
-                        <div className="text-center py-8 text-slate-500 text-xs italic">
-                            No hay aventureros en la mesa todavía. Creá uno o elegilo de tu salón.
+                        <div className="text-center py-8 font-garamond italic text-[#8a6a3e] text-sm">
+                            No hay aventureros en la mesa todavía. Creá uno o elegilo de tu salón de héroes.
                         </div>
                     ) : (
                         jugadores.map((j, index) => (
                             <div key={j.id} className="relative">
                                 {enCombate && turnoIndex === index && (
-                                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-red-500 animate-bounce">
-                                        <Sword size={16} />
+                                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-[#fef08a] animate-bounce z-20">
+                                        <Sword size={18} />
                                     </div>
                                 )}
                                 <PlayerCard jugador={j} />
@@ -235,23 +240,33 @@ export default function Home() {
                     )}
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-slate-700 space-y-2">
+                <div className="mt-4 pt-4 border-t-2 border-[#3d2716] space-y-2 shrink-0">
                     {jugadores.length > 0 && !juegoIniciado && (
                         <button
                             onClick={iniciarNuevaPartida}
-                            className="w-full bg-emerald-700 hover:bg-emerald-600 text-white p-3 rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 mb-3 cursor-pointer"
+                            className="w-full bg-gradient-to-r from-[#7b1f1f] via-[#991b1b] to-[#7b1f1f] hover:brightness-110 text-[#fef08a] p-3 rounded-xl font-cinzel font-bold text-xs uppercase tracking-widest shadow-lg border border-[#c8a45a] transition-all active:scale-95 flex items-center justify-center gap-2 mb-2 cursor-pointer"
                         >
-                            <Sword size={16} /> Iniciar Aventura
+                            <Sword size={15} /> Iniciar Aventura ({jugadores.length} PJ)
                         </button>
                     )}
 
-                    <Link href="/dm" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-xs w-full py-1.5">
-                        <Sword size={14} /> Panel del DM
+                    <Link
+                        href="/parties"
+                        className="flex items-center gap-2 text-xs font-cinzel font-semibold text-[#c8a45a] hover:text-[#fef08a] transition-colors w-full py-1"
+                    >
+                        <Users size={14} /> Salón de Parties Online
+                    </Link>
+
+                    <Link
+                        href="/personajes"
+                        className="flex items-center gap-2 text-xs font-cinzel text-stone-400 hover:text-amber-100 transition-colors w-full py-1"
+                    >
+                        <Shield size={14} /> Administrar Fichas
                     </Link>
 
                     <button
                         onClick={() => { resetGame(); setJuegoIniciado(false); setMenuAbierto(false); }}
-                        className="flex items-center gap-2 text-red-400/70 hover:text-red-400 transition-colors text-xs w-full text-left font-semibold py-1.5"
+                        className="flex items-center gap-2 text-[11px] font-cinzel uppercase text-red-400/60 hover:text-red-400 transition-colors w-full text-left py-1"
                     >
                         Vaciar Mesa
                     </button>
@@ -260,24 +275,24 @@ export default function Home() {
 
             {menuAbierto && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-[55] md:hidden backdrop-blur-sm"
+                    className="fixed inset-0 bg-black/70 z-[55] md:hidden backdrop-blur-sm"
                     onClick={() => setMenuAbierto(false)}
                 />
             )}
 
             {/* SECCIÓN PRINCIPAL */}
-            <section className="flex-1 flex flex-col h-full bg-pergamino relative overflow-hidden">
+            <section className="flex-1 flex flex-col h-full bg-[#18110c] relative overflow-hidden">
                 {/* Cabecera común con UserNav */}
-                <header className="p-3 md:px-6 bg-slate-900/90 text-white flex justify-between items-center z-20 border-b border-slate-800 shadow-sm backdrop-blur-md">
+                <header className="p-3 md:px-6 bg-[#140c08] text-amber-100 flex justify-between items-center z-20 border-b-2 border-[#3d2716] shadow-sm">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setMenuAbierto(true)}
-                            className="md:hidden text-slate-300 hover:text-white"
+                            className="md:hidden text-[#c8a45a] hover:text-white"
                         >
                             <Menu size={22} />
                         </button>
-                        <div className="flex items-center gap-2 font-bold text-base font-serif text-amber-200">
-                            <Dices className="w-5 h-5 text-amber-400" />
+                        <div className="flex items-center gap-2 font-cinzel font-bold text-base text-[#fef08a]">
+                            <Dices className="w-5 h-5 text-[#c8a45a]" />
                             <span>Mesa Arcana</span>
                         </div>
                     </div>
@@ -287,19 +302,32 @@ export default function Home() {
 
                 {!juegoIniciado ? (
                     <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-center justify-center">
-                        <div className="w-full max-w-lg bg-white/95 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-2xl border border-stone-300">
-                            <h2 className="text-xl md:text-2xl font-bold mb-4 text-center text-stone-900 font-serif border-b border-stone-200 pb-3">
-                                Reunir a la Compañía
-                            </h2>
+                        <div className="w-full max-w-xl relative rounded-2xl border-2 border-[#8a6a3e] bg-pergamino-real p-6 md:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+                            <DragonCorner position="top-left" size={32} />
+                            <DragonCorner position="top-right" size={32} />
+                            <DragonCorner position="bottom-left" size={32} />
+                            <DragonCorner position="bottom-right" size={32} />
+
+                            <div className="text-center mb-6">
+                                <div className="flex justify-center mb-2">
+                                    <VitralDM pensando={false} className="scale-90" />
+                                </div>
+                                <BannerTitulo>
+                                    Reunir a la Compañía
+                                </BannerTitulo>
+                                <p className="font-garamond italic text-[#5c3a21] text-sm mt-1">
+                                    Alista a tus aventureros para sumergirte en las crónicas de D&D 5e narradas por la IA
+                                </p>
+                            </div>
 
                             {/* Selector rápido si tiene personajes guardados */}
                             {misPersonajes.length > 0 && (
-                                <div className="mb-6 p-4 bg-amber-50/80 border border-amber-200 rounded-xl">
+                                <div className="mb-5 p-4 bg-[#e3d0ab]/50 border border-[#8a6a3e]/50 rounded-xl">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-                                            <Shield size={14} /> Tus Héroes Guardados
+                                        <span className="text-xs font-cinzel font-bold text-[#7b1f1f] uppercase tracking-wider flex items-center gap-1.5">
+                                            <Shield size={14} className="text-[#c8a45a]" /> Tus Héroes del Salón
                                         </span>
-                                        <Link href="/personajes" className="text-[11px] text-amber-700 hover:underline">
+                                        <Link href="/personajes" className="text-[11px] font-cinzel text-[#8a6a3e] hover:text-[#7b1f1f] underline">
                                             Administrar
                                         </Link>
                                     </div>
@@ -311,14 +339,14 @@ export default function Home() {
                                                     key={pj.id}
                                                     disabled={yaEnMesa || jugadores.length >= 5}
                                                     onClick={() => agregarPersonajeGuardado(pj)}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-cinzel font-semibold flex items-center gap-1.5 transition-all ${
                                                         yaEnMesa
-                                                            ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                                                            : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 active:scale-95'
+                                                            ? 'bg-[#d8c5a2] text-[#8a6a3e] border border-[#8a6a3e]/30 cursor-not-allowed opacity-60'
+                                                            : 'bg-[#fbf6ec] hover:bg-[#fff9ed] text-[#3d2716] border border-[#8a6a3e] shadow-xs active:scale-95 cursor-pointer'
                                                     }`}
                                                 >
                                                     <span>{pj.nombre}</span>
-                                                    <span className="text-[10px] text-amber-700">({pj.clase})</span>
+                                                    <span className="text-[10px] text-[#7b1f1f]">({pj.clase})</span>
                                                     {yaEnMesa ? '✓' : '+'}
                                                 </button>
                                             );
@@ -329,45 +357,53 @@ export default function Home() {
 
                             {/* Idioma */}
                             <div className="mb-4">
-                                <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">Idioma de la Narración</label>
+                                <label className="text-xs font-cinzel font-bold text-[#3d2716] uppercase tracking-wider block mb-1">
+                                    Idioma de la Narración
+                                </label>
                                 <select
                                     value={idioma}
                                     onChange={(e) => setIdioma(e.target.value)}
-                                    className="w-full p-2.5 border border-stone-300 rounded-xl bg-stone-50 mt-1 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                                    className="w-full p-2.5 border-2 border-[#8a6a3e] rounded-xl bg-[#fbf6ec] text-sm font-garamond text-[#241510] focus:outline-none focus:border-[#7b1f1f] shadow-inner"
                                 >
                                     <option value="es">Español (Castellano)</option>
-                                    <option value="en">English</option>
+                                    <option value="en">English (Inglés)</option>
                                 </select>
                             </div>
 
                             {/* Formulario nuevo héroe */}
-                            <div className="grid grid-cols-1 gap-3 mb-6">
+                            <div className="grid grid-cols-1 gap-3 mb-6 bg-[#e3d0ab]/30 p-4 rounded-xl border border-[#8a6a3e]/30">
                                 <div>
-                                    <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">Nombre del Héroe</label>
+                                    <label className="text-xs font-cinzel font-bold text-[#3d2716] uppercase tracking-wider block mb-1">
+                                        Nombre del Héroe
+                                    </label>
                                     <input
                                         value={nombreTmp}
                                         onChange={(e) => setNombreTmp(e.target.value)}
-                                        className="w-full p-2.5 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500/40 outline-none text-sm text-stone-900 mt-1"
+                                        className="w-full p-2.5 border-2 border-[#8a6a3e] rounded-xl bg-[#fbf6ec] font-garamond text-base text-[#241510] focus:outline-none focus:border-[#7b1f1f] shadow-inner"
                                         placeholder="Ej: Thorin Escudo de Roble"
                                     />
                                 </div>
-                                <div className="flex gap-3">
-                                    <div className="flex-1">
-                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">Raza</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-xs font-cinzel font-bold text-[#3d2716] uppercase tracking-wider block mb-1">
+                                            Raza
+                                        </label>
                                         <select
                                             value={razaTmp}
                                             onChange={(e) => setRazaTmp(e.target.value)}
-                                            className="w-full p-2.5 border border-stone-300 rounded-xl bg-stone-50 text-sm text-stone-800 mt-1"
+                                            className="w-full p-2.5 border-2 border-[#8a6a3e] rounded-xl bg-[#fbf6ec] text-sm font-garamond text-[#241510] focus:outline-none"
                                         >
                                             {razas.map(r => <option key={r} value={r}>{r}</option>)}
                                         </select>
                                     </div>
-                                    <div className="flex-1">
-                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">Clase</label>
+                                    <div>
+                                        <label className="text-xs font-cinzel font-bold text-[#3d2716] uppercase tracking-wider block mb-1">
+                                            Clase
+                                        </label>
                                         <select
                                             value={claseTmp}
                                             onChange={(e) => setClaseTmp(e.target.value)}
-                                            className="w-full p-2.5 border border-stone-300 rounded-xl bg-stone-50 text-sm text-stone-800 mt-1"
+                                            className="w-full p-2.5 border-2 border-[#8a6a3e] rounded-xl bg-[#fbf6ec] text-sm font-garamond text-[#241510] focus:outline-none"
                                         >
                                             {clases.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
@@ -376,17 +412,17 @@ export default function Home() {
                                 <button
                                     onClick={agregarJugador}
                                     disabled={!nombreTmp.trim() || jugadores.length >= 5}
-                                    className="bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white p-3 rounded-xl transition-all font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 mt-2 cursor-pointer shadow-md"
+                                    className="bg-[#241510] hover:bg-[#3d2716] disabled:opacity-40 text-[#fef08a] p-3 rounded-xl transition-all font-cinzel font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 mt-2 cursor-pointer shadow-md border border-[#8a6a3e]"
                                 >
-                                    <UserPlus className="w-4 h-4" /> Añadir a la Mesa ({jugadores.length}/5)
+                                    <UserPlus className="w-4 h-4 text-[#c8a45a]" /> Añadir a la Mesa ({jugadores.length}/5)
                                 </button>
                             </div>
 
                             {jugadores.length > 0 && (
-                                <div className="pt-4 border-t border-stone-200 text-center">
+                                <div className="pt-2 text-center">
                                     <button
                                         onClick={iniciarNuevaPartida}
-                                        className="w-full py-3 bg-amber-800 hover:bg-amber-700 text-amber-50 font-bold rounded-xl text-sm uppercase tracking-wider shadow-lg transition-transform hover:scale-102 flex items-center justify-center gap-2 cursor-pointer"
+                                        className="w-full py-3.5 bg-gradient-to-r from-[#7b1f1f] via-[#991b1b] to-[#7b1f1f] hover:brightness-110 text-[#fef08a] font-cinzel font-bold rounded-xl text-sm uppercase tracking-widest shadow-xl border-2 border-[#c8a45a] transition-transform hover:scale-102 flex items-center justify-center gap-2 cursor-pointer"
                                     >
                                         <Sparkles size={16} /> ¡Comenzar la Campaña! ({jugadores.length} PJ)
                                     </button>
@@ -396,13 +432,13 @@ export default function Home() {
                     </div>
                 ) : (
                     <>
-                        <div className="flex justify-between items-center px-4 py-2 bg-white/40 backdrop-blur-sm border-b border-stone-300">
-                            <h2 className="font-bold text-lg text-stone-800 flex items-center gap-2">
-                                <ScrollText className="w-4 h-4" /> Crónicas
+                        <div className="flex justify-between items-center px-6 py-2.5 bg-[#140c08] border-b-2 border-[#3d2716]">
+                            <h2 className="font-cinzel font-bold text-sm text-[#fef08a] flex items-center gap-2">
+                                <ScrollText className="w-4 h-4 text-[#c8a45a]" /> Crónicas de la Mesa Arcana
                             </h2>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-pergamino-real">
                             {historial.map((m, i) => (
                                 <MessageBubble key={i} message={m} />
                             ))}
@@ -410,7 +446,7 @@ export default function Home() {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        <div className="p-4 bg-white/40 backdrop-blur-md border-t border-black/10">
+                        <div className="p-4 bg-[#e3d0ab]/40 border-t-2 border-[#8a6a3e]/60">
                             <ChatInput
                                 input={inputUsuario}
                                 setInput={setInputUsuario}

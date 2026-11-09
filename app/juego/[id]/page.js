@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, use, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useGameStore } from '@/store/useGameStore';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 // Shared Components
 import { MessageBubble } from '../../components/MessageBubble';
@@ -10,9 +11,12 @@ import { ChatInput } from '../../components/ChatInput';
 import { LoadingDM } from '../../components/LoadingDM';
 import { PlayerCard } from '../../components/PlayerCard';
 import { UserNav } from '../../components/UserNav';
+import { DragonCorner } from '../../components/ui/DragonCorner';
+import { BannerTitulo } from '../../components/ui/BannerTitulo';
+import { VitralDM } from '../../components/ui/VitralDM';
 
 import {
-    Dices, ScrollText, UserPlus, Menu, X, ArrowLeft, Sword, AlertTriangle, RotateCcw, Sparkles
+    Dices, ScrollText, UserPlus, Menu, X, ArrowLeft, Sword, AlertTriangle, RotateCcw, Users, Shield
 } from 'lucide-react';
 
 export default function PartidaEnVivo({ params }) {
@@ -343,66 +347,73 @@ export default function PartidaEnVivo({ params }) {
     };
 
     if (cargando) return (
-        <div className="h-screen w-full bg-slate-900 flex items-center justify-center text-white">
-            <LoadingDM />
+        <div className="h-screen w-full bg-[#18110c] flex flex-col items-center justify-center text-amber-100 gap-4">
+            <VitralDM pensando={true} />
+            <p className="font-cinzel text-sm tracking-widest uppercase text-[#c8a45a] animate-pulse">
+                Abriendo la Mesa Arcana...
+            </p>
         </div>
     );
 
     return (
-        <main className="flex h-screen w-full bg-slate-900 overflow-hidden relative">
+        <main className="flex h-screen w-full bg-[#18110c] overflow-hidden relative">
 
             {/* HEADER MOBILE */}
-            <header className="md:hidden absolute top-0 left-0 right-0 p-4 bg-slate-800/90 text-white flex justify-between items-center z-50 shadow-md backdrop-blur-sm">
-                <button onClick={() => setMenuAbierto(true)}>
-                    <Menu size={24} />
+            <header className="md:hidden absolute top-0 left-0 right-0 p-3 bg-[#1f140e]/95 text-amber-100 flex justify-between items-center z-50 border-b border-[#3d2716] shadow-md backdrop-blur-sm">
+                <button onClick={() => setMenuAbierto(true)} className="p-1 hover:text-[#c8a45a]">
+                    <Menu size={22} />
                 </button>
-                <div className="flex items-center gap-2 font-bold font-serif text-amber-200">
-                    <Dices className="w-5 h-5 text-amber-400" /> <span>Mesa Arcana</span>
+                <div className="flex items-center gap-2 font-cinzel font-bold text-sm text-[#fef08a]">
+                    <Dices className="w-4 h-4 text-[#c8a45a]" />
+                    <span>Mesa Arcana</span>
                 </div>
-                <span className="text-xs bg-slate-700 px-2 py-1 rounded-full">{jugadores.length} PJ</span>
+                <span className="text-[10px] font-cinzel bg-[#3d2716] text-[#c8a45a] px-2 py-0.5 rounded-full border border-[#8a6a3e]/40">
+                    {jugadores.length} PJ
+                </span>
             </header>
 
-            {/* SIDEBAR (Jugadores) */}
+            {/* SIDEBAR (Jugadores / Compañía) */}
             <aside className={`
-                fixed inset-y-0 left-0 z-[60] w-80 bg-slate-900 border-r border-slate-700 p-4 transform transition-transform duration-300 ease-in-out
-                md:relative md:translate-x-0 pt-20 md:pt-4
+                fixed inset-y-0 left-0 z-[60] w-80 bg-[#140c08] border-r-2 border-[#3d2716] p-4 transform transition-transform duration-300 ease-in-out flex flex-col
+                md:relative md:translate-x-0 pt-16 md:pt-4 shadow-2xl
                 ${menuAbierto ? 'translate-x-0' : '-translate-x-full'}
             `}>
-                <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-2 text-slate-400">
-                        <UserPlus size={20} />
-                        <h2 className="font-bold uppercase tracking-widest text-sm text-white">
-                            Compañía <span className="text-xs text-green-400 ml-2">● {compañeros} Online</span>
+                <div className="flex justify-between items-center mb-4 pb-3 border-b border-[#3d2716]">
+                    <div className="flex items-center gap-2 text-[#c8a45a]">
+                        <UserPlus size={18} />
+                        <h2 className="font-cinzel font-bold uppercase tracking-wider text-xs text-amber-100">
+                            Compañía <span className="text-[10px] text-emerald-400 ml-1">● {compañeros}</span>
                         </h2>
                     </div>
 
                     <button
                         onClick={() => toggleCombate()}
-                        className={`text-[10px] px-2 py-1 rounded font-bold transition-all ${enCombate
-                            ? 'bg-red-600 text-white animate-pulse shadow-[0_0_10px_rgba(220,38,38,0.5)]'
-                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        className={`text-[10px] font-cinzel px-2.5 py-1 rounded font-bold uppercase tracking-wider transition-all border ${enCombate
+                            ? 'bg-[#7b1f1f] text-[#fef08a] border-[#c8a45a] animate-pulse shadow-[0_0_12px_rgba(123,31,31,0.8)]'
+                            : 'bg-[#241510] text-[#c8a45a] border-[#3d2716] hover:bg-[#3d2716] hover:text-amber-100'
                             }`}
                     >
-                        {enCombate ? '⚔️ EN COMBATE' : 'INICIAR COMBATE'}
+                        {enCombate ? '⚔️ Combate' : '⚔️ Iniciar'}
                     </button>
 
-                    <button onClick={() => setMenuAbierto(false)} className="md:hidden text-slate-400">
-                        <X size={24} />
+                    <button onClick={() => setMenuAbierto(false)} className="md:hidden text-[#c8a45a]">
+                        <X size={20} />
                     </button>
                 </div>
 
-                <div className="space-y-4 flex-1 overflow-y-auto h-[calc(100vh-160px)] md:h-auto">
+                {/* Lista de Fichas de Personajes */}
+                <div className="space-y-3.5 flex-1 overflow-y-auto pr-1">
                     {jugadores.map((j, index) => {
                         const esMiPersonaje = j.usuario_id === usuarioActual?.id;
                         return (
                             <div key={j.id} className="relative">
                                 {enCombate && turnoIndex === index && (
-                                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-red-500 animate-bounce">
-                                        <Sword size={16} />
+                                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-[#fef08a] animate-bounce z-20 drop-shadow-[0_0_8px_rgba(254,240,138,0.8)]">
+                                        <Sword size={18} />
                                     </div>
                                 )}
                                 {esMiPersonaje && (
-                                    <span className="absolute right-2 top-2 z-10 text-[9px] bg-amber-900/80 text-amber-200 border border-amber-600/40 font-bold px-1.5 py-0.5 rounded">
+                                    <span className="absolute right-3 top-2 z-20 text-[9px] font-cinzel font-bold bg-[#7b1f1f] text-[#fef08a] border border-[#c8a45a] px-2 py-0.5 rounded shadow">
                                         Tu Héroe
                                     </span>
                                 )}
@@ -412,33 +423,45 @@ export default function PartidaEnVivo({ params }) {
                     })}
                 </div>
 
-                <div className="mt-8 pt-8 border-t border-slate-700 space-y-2">
+                {/* Controles de Navegación del Sidebar */}
+                <div className="mt-4 pt-4 border-t-2 border-[#3d2716] space-y-2 shrink-0">
                     {enCombate && (
                         <button
                             onClick={() => avanzarTurno()}
-                            className="group relative flex items-center justify-center gap-2 bg-gradient-to-r from-red-800 to-red-600 hover:from-red-700 hover:to-red-500 text-white w-full py-2 rounded-lg font-bold tracking-widest uppercase text-[10px] shadow-lg transition-all hover:scale-105 mb-4"
+                            className="group relative flex items-center justify-center gap-2 bg-gradient-to-r from-[#7b1f1f] via-[#991b1b] to-[#7b1f1f] border border-[#c8a45a] hover:brightness-110 text-[#fef08a] w-full py-2.5 rounded-lg font-cinzel font-bold tracking-widest uppercase text-[10px] shadow-lg transition-all hover:scale-[1.02] mb-2"
                         >
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-white animate-pulse"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#fef08a] animate-pulse"></span>
                             Finalizar Turno
                             <Sword size={14} className="group-hover:rotate-45 transition-transform" />
                         </button>
                     )}
 
-                    <Link href="/parties" className="flex items-center gap-2 text-amber-300 hover:text-white transition-colors text-xs w-full py-1 font-semibold">
+                    <Link
+                        href="/parties"
+                        className="flex items-center gap-2 text-xs font-cinzel font-semibold text-[#c8a45a] hover:text-[#fef08a] transition-colors w-full py-1"
+                    >
                         <Users size={14} /> Salón de Parties
                     </Link>
 
-                    <button className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm w-full text-left">
-                        <ScrollText size={16} /> Ver Log de Misión
-                    </button>
+                    <Link
+                        href="/personajes"
+                        className="flex items-center gap-2 text-xs font-cinzel text-stone-400 hover:text-amber-100 transition-colors w-full py-1"
+                    >
+                        <Shield size={14} /> Mis Héroes
+                    </Link>
+
                     <button
                         onClick={() => resetGame()}
-                        className="flex items-center gap-2 text-red-900/50 hover:text-red-500 transition-colors text-xs w-full text-left uppercase font-bold"
+                        className="flex items-center gap-2 text-[11px] font-cinzel uppercase text-red-400/60 hover:text-red-400 transition-colors w-full text-left py-1"
                     >
                         Reiniciar Partida
                     </button>
-                    <button onClick={() => router.push('/')} className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm w-full py-2 justify-center md:justify-start mt-2">
-                        <ArrowLeft size={16} /> Volver al Lobby
+
+                    <button
+                        onClick={() => router.push('/')}
+                        className="flex items-center gap-2 text-xs font-cinzel text-stone-400 hover:text-white transition-colors w-full py-1.5 justify-center md:justify-start"
+                    >
+                        <ArrowLeft size={14} /> Salir al Salón
                     </button>
                 </div>
             </aside>
@@ -446,91 +469,129 @@ export default function PartidaEnVivo({ params }) {
             {/* OVERLAY MOBILE */}
             {menuAbierto && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-[55] md:hidden backdrop-blur-sm"
+                    className="fixed inset-0 bg-black/70 z-[55] md:hidden backdrop-blur-sm"
                     onClick={() => setMenuAbierto(false)}
                 />
             )}
 
-            {/* CHAT AREA */}
-            <section className="flex-1 flex flex-col h-full bg-pergamino relative pt-16 md:pt-0">
-                <div className="hidden md:flex justify-between items-center px-4 py-2 bg-slate-900/90 text-white backdrop-blur-sm border-b border-slate-800 shadow-sm">
-                    <h2 className="font-bold text-sm text-amber-200 flex items-center gap-2 font-serif">
-                        <ScrollText className="w-4 h-4 text-amber-400" /> Crónicas de la Partida {id.slice(0, 4)}...
-                    </h2>
+            {/* CHAT AREA (Pergamino central) */}
+            <section className="flex-1 flex flex-col h-full bg-[#18110c] relative pt-14 md:pt-0">
+                {/* Cabecera superior con Vitral y UserNav */}
+                <div className="hidden md:flex justify-between items-center px-6 py-2.5 bg-[#140c08] text-amber-100 border-b-2 border-[#3d2716] shadow-md">
+                    <div className="flex items-center gap-3">
+                        <VitralDM pensando={procesando} className="scale-75 -my-2" />
+                        <div>
+                            <h2 className="font-cinzel font-bold text-sm text-[#fef08a] flex items-center gap-2">
+                                <ScrollText className="w-4 h-4 text-[#c8a45a]" /> Crónicas de la Mesa Arcana
+                            </h2>
+                            <p className="text-[10px] font-garamond italic text-[#c8a45a]/80">
+                                Partida: #{id.slice(0, 8)} • Narrada por la Inteligencia Arcana
+                            </p>
+                        </div>
+                    </div>
                     <UserNav />
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 fade-edges font-adventure">
-                    {/* Botón para iniciar aventura cuando el chat está vacío */}
-                    {historial.length === 0 && !procesando && (
-                        <div className="flex flex-col items-center justify-center min-h-[300px] text-center p-6 space-y-4">
-                            <div className="bg-stone-900/10 backdrop-blur-sm p-6 rounded-2xl border border-stone-800/20 max-w-md shadow-sm">
-                                <Sparkles className="w-8 h-8 text-amber-800 mx-auto mb-2 animate-bounce" />
-                                <h3 className="font-bold text-lg text-stone-900 mb-1">¡Compañía reunida!</h3>
-                                <p className="text-stone-700 text-xs mb-4">
-                                    Tu compañía está lista. El Dungeon Master puede abrir la escena inicial cuando quieras.
-                                </p>
-                                <button
-                                    onClick={() => enviarMensajeTexto("¡Comencemos la aventura! Describe la escena inicial de dónde nos encontramos y qué desafío tenemos enfrente.")}
-                                    className="px-5 py-2.5 bg-amber-800 hover:bg-amber-700 text-amber-50 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all hover:scale-105 flex items-center gap-2 mx-auto cursor-pointer"
-                                >
-                                    <Sword size={14} /> Comenzar Aventura
-                                </button>
+                {/* Tablero de pergamino con rebordes */}
+                <div className="flex-1 relative overflow-hidden p-2 md:p-4 bg-[#18110c] flex flex-col">
+                    <div className="flex-1 relative rounded-xl border-2 border-[#8a6a3e] bg-pergamino-real shadow-[inset_0_0_30px_rgba(61,39,22,0.4)] flex flex-col overflow-hidden">
+                        <DragonCorner position="top-left" size={28} />
+                        <DragonCorner position="top-right" size={28} />
+                        <DragonCorner position="bottom-left" size={28} />
+                        <DragonCorner position="bottom-right" size={28} />
+
+                        {/* Mensajes del chat */}
+                        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 fade-edges">
+                            {/* Proclama inicial cuando el chat está vacío */}
+                            {historial.length === 0 && !procesando && (
+                                <div className="flex flex-col items-center justify-center min-h-[340px] text-center p-6 space-y-4">
+                                    <div className="relative p-8 rounded-2xl bg-[#e3d0ab]/40 border-2 border-[#8a6a3e] max-w-md shadow-xl backdrop-blur-xs">
+                                        <DragonCorner position="top-left" size={20} />
+                                        <DragonCorner position="top-right" size={20} />
+                                        <DragonCorner position="bottom-left" size={20} />
+                                        <DragonCorner position="bottom-right" size={20} />
+
+                                        <div className="flex justify-center mb-3">
+                                            <VitralDM pensando={false} />
+                                        </div>
+
+                                        <BannerTitulo className="mb-3">
+                                            Compañía Reunida
+                                        </BannerTitulo>
+
+                                        <p className="font-garamond text-base text-[#3d2716] italic leading-relaxed mb-5">
+                                            Los dados están listos y los vientos del destino soplan a vuestro favor.
+                                            El Dungeon Master aguarda vuestra señal para narrar el inicio de la gesta.
+                                        </p>
+
+                                        <button
+                                            onClick={() => enviarMensajeTexto("¡Comencemos la aventura! Describe la escena inicial de dónde nos encontramos y qué desafío tenemos enfrente.")}
+                                            className="px-6 py-3 bg-gradient-to-r from-[#7b1f1f] via-[#991b1b] to-[#7b1f1f] hover:brightness-110 text-[#fef08a] font-cinzel font-bold text-xs uppercase tracking-widest rounded-xl shadow-lg border border-[#c8a45a] transition-all hover:scale-105 flex items-center gap-2 mx-auto cursor-pointer"
+                                        >
+                                            <Sword size={14} /> Comenzar Aventura
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {historial.map((m, i) => (
+                                <MessageBubble key={i} message={m} />
+                            ))}
+
+                            {procesando && <LoadingDM />}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Aviso visible de error */}
+                        {errorAviso && (
+                            <div className="mx-4 mb-2 p-3 bg-[#4a1212] border-2 border-red-500 rounded-xl text-red-100 text-xs flex justify-between items-center shadow-lg animate-in fade-in slide-in-from-bottom-2">
+                                <div className="flex items-center gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-red-300 shrink-0" />
+                                    <span className="font-garamond">{errorAviso}</span>
+                                </div>
+                                {ultimoMensajeRef.current && (
+                                    <button
+                                        onClick={() => enviarMensajeTexto(ultimoMensajeRef.current)}
+                                        className="ml-3 px-3 py-1 bg-red-700 hover:bg-red-600 text-white rounded-lg font-cinzel font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 shrink-0 transition-colors"
+                                    >
+                                        <RotateCcw size={12} /> Reintentar
+                                    </button>
+                                )}
                             </div>
-                        </div>
-                    )}
-
-                    {historial.map((m, i) => (
-                        <MessageBubble key={i} message={m} />
-                    ))}
-                    {procesando && <LoadingDM />}
-                    <div ref={messagesEndRef} />
-                </div>
-
-                {/* Aviso visible de error */}
-                {errorAviso && (
-                    <div className="mx-4 mb-2 p-3 bg-red-950/90 border border-red-500/60 rounded-xl text-red-200 text-xs flex justify-between items-center shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2">
-                        <div className="flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-                            <span>{errorAviso}</span>
-                        </div>
-                        {ultimoMensajeRef.current && (
-                            <button
-                                onClick={() => enviarMensajeTexto(ultimoMensajeRef.current)}
-                                className="ml-3 px-3 py-1 bg-red-700 hover:bg-red-600 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 shrink-0 transition-colors"
-                            >
-                                <RotateCcw size={12} /> Reintentar
-                            </button>
                         )}
-                    </div>
-                )}
 
-                {/* Control de combate por turnos: indicador de turno */}
-                {enCombate && personajeTurnoActivo && (
-                    <div className="mx-4 mb-2 p-2 bg-amber-950/80 border border-amber-600/40 rounded-xl text-xs flex justify-between items-center text-amber-200">
-                        <span className="flex items-center gap-1.5 font-semibold">
-                            <Sword size={14} className="text-red-400 animate-pulse" />
-                            Turno de acción: <strong className="text-white">{personajeTurnoActivo.nombre}</strong>
-                            {personajeTurnoActivo.usuario_id === usuarioActual?.id ? ' (¡Te toca!)' : ''}
-                        </span>
-                        {!esMiTurno && (
-                            <span className="text-[11px] text-amber-400/80 italic">Esperando su tirada o acción...</span>
+                        {/* Banner de combate por turnos */}
+                        {enCombate && personajeTurnoActivo && (
+                            <div className="mx-4 mb-2 p-2.5 bg-[#241510] border-2 border-[#8a6a3e] rounded-xl text-xs flex justify-between items-center text-[#fef08a] shadow-md">
+                                <span className="flex items-center gap-2 font-cinzel font-bold">
+                                    <Sword size={15} className="text-[#fef08a] animate-pulse" />
+                                    Turno de acción: <span className="text-white underline decoration-[#c8a45a] underline-offset-2">{personajeTurnoActivo.nombre}</span>
+                                    {personajeTurnoActivo.usuario_id === usuarioActual?.id ? ' (¡Es tu turno!)' : ''}
+                                </span>
+                                {!esMiTurno && (
+                                    <span className="text-[11px] font-garamond text-[#c8a45a] italic">
+                                        Esperando su acción o tirada...
+                                    </span>
+                                )}
+                            </div>
                         )}
-                    </div>
-                )}
 
-                {/* Input de Chat */}
-                <div className="p-4 bg-white/10 backdrop-blur-md border-t border-black/10 flex flex-col gap-3 z-10">
-                    {alguienIn && (
-                        <p className="text-xs text-slate-500 animate-pulse font-bold ml-2">Alguien está escribiendo...</p>
-                    )}
-                    <ChatInput
-                        input={inputUsuario}
-                        setInput={setInputUsuario}
-                        onSend={enviarMensaje}
-                        loading={procesando}
-                        onTyping={handleTyping}
-                    />
+                        {/* Input de Chat */}
+                        <div className="p-3 md:p-4 bg-[#e3d0ab]/40 border-t-2 border-[#8a6a3e]/60 backdrop-blur-xs flex flex-col gap-2 z-10">
+                            {alguienIn && (
+                                <p className="text-xs font-garamond italic text-[#7b1f1f] animate-pulse font-bold ml-2">
+                                    Un compañero está formulando su acción...
+                                </p>
+                            )}
+                            <ChatInput
+                                input={inputUsuario}
+                                setInput={setInputUsuario}
+                                onSend={enviarMensaje}
+                                loading={procesando}
+                                onTyping={handleTyping}
+                            />
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>

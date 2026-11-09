@@ -10,7 +10,6 @@ import {
 
 export default function PartiesPage() {
     const router = useRouter();
-    const [sesion, setSesion] = useState(null);
     const [cargandoAuth, setCargandoAuth] = useState(true);
     const [parties, setParties] = useState([]);
     const [cargandoLista, setCargandoLista] = useState(true);
@@ -39,7 +38,6 @@ export default function PartiesPage() {
                 return;
             }
 
-            setSesion(session);
             setCargandoAuth(false);
             cargarParties();
         };
@@ -50,7 +48,6 @@ export default function PartiesPage() {
             if (!session?.user) {
                 router.push('/login');
             } else {
-                setSesion(session);
                 cargarParties();
             }
         });
@@ -375,3 +372,4 @@ export default function PartiesPage() {
         </main>
     );
 }
+

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { UserNav } from '../../components/UserNav';
 import {
     Users, Shield, Copy, Check, Sword, Crown, ArrowLeft,
-    AlertCircle, Sparkles, UserCheck, Heart, ShieldAlert
+    AlertCircle, Sparkles, Heart, ShieldAlert
 } from 'lucide-react';
 
 export default function PartyLobbyPage({ params }) {
@@ -440,3 +440,4 @@ export default function PartyLobbyPage({ params }) {
         </main>
     );
 }
+

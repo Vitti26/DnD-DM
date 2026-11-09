@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "scripts/**",
+    "list_models.js",
+    "test_direct_api.js",
+    "test_api_check.js",
+    "repro_api.js",
   ]),
 ]);
 
