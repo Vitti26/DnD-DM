@@ -9,6 +9,7 @@ import { MessageBubble } from '../../components/MessageBubble';
 import { ChatInput } from '../../components/ChatInput';
 import { LoadingDM } from '../../components/LoadingDM';
 import { PlayerCard } from '../../components/PlayerCard';
+import { UserNav } from '../../components/UserNav';
 
 import {
     Dices, ScrollText, UserPlus, Menu, X, ArrowLeft, Sword, AlertTriangle, RotateCcw, Sparkles
@@ -50,6 +51,13 @@ export default function PartidaEnVivo({ params }) {
     // 1. Carga inicial y suscripción a Realtime
     useEffect(() => {
         const cargarPartida = async () => {
+            // Verificación de sesión: si no hay usuario, redirigir a login
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) {
+                router.push('/login');
+                return;
+            }
+
             const { data, error } = await supabase
                 .from('partidas')
                 .select('*')
@@ -400,10 +408,11 @@ export default function PartidaEnVivo({ params }) {
 
             {/* CHAT AREA */}
             <section className="flex-1 flex flex-col h-full bg-pergamino relative pt-16 md:pt-0">
-                <div className="hidden md:flex justify-between items-center px-4 py-2 bg-white/40 backdrop-blur-sm border-b border-stone-300">
-                    <h2 className="font-bold text-lg text-stone-800 flex items-center gap-2">
-                        <ScrollText className="w-4 h-4" /> Crónicas de la Partida {id.slice(0, 4)}...
+                <div className="hidden md:flex justify-between items-center px-4 py-2 bg-slate-900/90 text-white backdrop-blur-sm border-b border-slate-800 shadow-sm">
+                    <h2 className="font-bold text-sm text-amber-200 flex items-center gap-2 font-serif">
+                        <ScrollText className="w-4 h-4 text-amber-400" /> Crónicas de la Partida {id.slice(0, 4)}...
                     </h2>
+                    <UserNav />
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 fade-edges font-adventure">
