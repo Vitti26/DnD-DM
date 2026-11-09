@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { UserNav } from './components/UserNav';
-import { DragonCorner } from './components/ui/DragonCorner';
 import { BannerTitulo } from './components/ui/BannerTitulo';
 import { VitralDM } from './components/ui/VitralDM';
 import {
@@ -294,11 +293,6 @@ export default function Home() {
                 {!juegoIniciado ? (
                     <div className="flex-1 overflow-y-auto p-4 md:p-8 flex items-center justify-center">
                         <div className="w-full max-w-xl relative rounded-2xl border-2 border-[#8a6a3e] bg-pergamino-real p-6 md:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
-                            <DragonCorner position="top-left" size={32} />
-                            <DragonCorner position="top-right" size={32} />
-                            <DragonCorner position="bottom-left" size={32} />
-                            <DragonCorner position="bottom-right" size={32} />
-
                             <div className="text-center mb-6">
                                 <div className="flex justify-center mb-2">
                                     <VitralDM pensando={false} className="scale-90" />

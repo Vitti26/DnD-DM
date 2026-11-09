@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Dices, LogIn, Mail, Lock, AlertCircle, ArrowLeft } from 'lucide-react';
-import { DragonCorner } from '../components/ui/DragonCorner';
 import { BannerTitulo } from '../components/ui/BannerTitulo';
 
 export default function LoginPage() {
@@ -62,11 +61,6 @@ export default function LoginPage() {
                 </Link>
 
                 <div className="relative rounded-2xl border-2 border-[#8a6a3e] bg-pergamino-real p-8 shadow-[0_10px_40px_rgba(0,0,0,0.8)] text-[#241510]">
-                    <DragonCorner position="top-left" size={28} />
-                    <DragonCorner position="top-right" size={28} />
-                    <DragonCorner position="bottom-left" size={28} />
-                    <DragonCorner position="bottom-right" size={28} />
-
                     {/* Header */}
                     <div className="flex flex-col items-center text-center mb-6">
                         <div className="w-12 h-12 bg-[#241510] border-2 border-[#8a6a3e] rounded-xl flex items-center justify-center text-[#c8a45a] mb-2 shadow-inner">

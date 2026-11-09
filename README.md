@@ -111,7 +111,7 @@ DnD-DM/
 ├── app/
 │   ├── api/chat/route.js     # Endpoint del Dungeon Master con Gemini API
 │   ├── components/           # Componentes modulares (PlayerCard, MessageBubble, ChatInput)
-│   │   └── ui/               # Elementos ornamentales (DragonCorner, BannerTitulo, VitralDM)
+│   │   └── ui/               # Elementos ornamentales (BannerTitulo, VitralDM)
 │   ├── juego/[id]/page.js    # Mesa de juego en vivo con Realtime
 │   ├── parties/page.js       # Listado y creación de parties online
 │   ├── party/[codigo]/page.js# Lobby en tiempo real previo a la partida

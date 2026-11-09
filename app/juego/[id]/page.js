@@ -11,7 +11,6 @@ import { ChatInput } from '../../components/ChatInput';
 import { LoadingDM } from '../../components/LoadingDM';
 import { PlayerCard } from '../../components/PlayerCard';
 import { UserNav } from '../../components/UserNav';
-import { DragonCorner } from '../../components/ui/DragonCorner';
 import { VitralDM } from '../../components/ui/VitralDM';
 
 import {
@@ -477,11 +476,6 @@ export default function PartidaEnVivo({ params }) {
                 {/* Tablero de pergamino */}
                 <div className="flex-1 relative overflow-hidden p-2 md:p-4 bg-[#18110c] flex flex-col">
                     <div className="flex-1 relative rounded-xl border-2 border-[#8a6a3e] bg-pergamino-real shadow-[inset_0_0_30px_rgba(61,39,22,0.4)] flex flex-col overflow-hidden">
-                        <DragonCorner position="top-left" size={28} />
-                        <DragonCorner position="top-right" size={28} />
-                        <DragonCorner position="bottom-left" size={28} />
-                        <DragonCorner position="bottom-right" size={28} />
-
                         {/* Mensajes del chat */}
                         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 fade-edges">
                             {/* Mensaje sutil si el chat está recién iniciado */}

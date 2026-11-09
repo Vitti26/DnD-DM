@@ -1,5 +1,3 @@
-import { DragonCorner } from './ui/DragonCorner';
-
 export const MessageBubble = ({ message }) => {
     const isDM = message.rol === 'dm';
 
@@ -7,14 +5,6 @@ export const MessageBubble = ({ message }) => {
         return (
             <div className="flex justify-start mb-6 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <div className="relative max-w-[95%] md:max-w-[85%] bg-pergamino-real text-[#241510] p-6 md:p-8 rounded-2xl border-2 border-[#8a6a3e] shadow-2xl overflow-hidden">
-                    {/* Filigranas en las esquinas */}
-                    <div className="absolute top-1 left-1 pointer-events-none opacity-40">
-                        <DragonCorner className="w-8 h-8 text-[#7b1f1f]" />
-                    </div>
-                    <div className="absolute top-1 right-1 pointer-events-none opacity-40 transform rotate-90">
-                        <DragonCorner className="w-8 h-8 text-[#7b1f1f]" />
-                    </div>
-
                     {/* Encabezado del DM */}
                     <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#8a6a3e]/40">
                         <span className="font-cinzel text-xs font-bold uppercase tracking-widest text-[#7b1f1f] drop-shadow-sm">
