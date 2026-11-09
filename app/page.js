@@ -325,7 +325,7 @@ export default function Home() {
                             {jugadores.length > 0 && (
                                 <div className="mt-8 border-t pt-6">
                                     <p className="text-center text-sm text-slate-500 mb-4">¡Listos para la aventura!</p>
-                                    <p className="text-center text-xs text-slate-400">("Iniciar Aventura" ahora está en el menú lateral)</p>
+                                    <p className="text-center text-xs text-slate-400">(&quot;Iniciar Aventura&quot; ahora está en el menú lateral)</p>
                                 </div>
                             )}
                         </div>

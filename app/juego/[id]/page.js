@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef, use } from 'react';
+import { useEffect, useState, useRef, use, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useGameStore } from '@/store/useGameStore';
 import { useRouter } from 'next/navigation';
@@ -11,18 +11,19 @@ import { LoadingDM } from '../../components/LoadingDM';
 import { PlayerCard } from '../../components/PlayerCard';
 
 import {
-    Dices, RefreshCw, ScrollText, UserPlus, Menu, X, ArrowLeft, Sword
+    Dices, ScrollText, UserPlus, Menu, X, ArrowLeft, Sword, AlertTriangle, RotateCcw, Sparkles
 } from 'lucide-react';
 
 export default function PartidaEnVivo({ params }) {
-    // En Next.js 15/16, params es una Promesa. Usamos 'use' para desenvolverla.
     const { id } = use(params);
 
     const router = useRouter();
     const [cargando, setCargando] = useState(true);
     const [menuAbierto, setMenuAbierto] = useState(false);
     const [inputUsuario, setInputUsuario] = useState("");
-    const [procesando, setProcesando] = useState(false); // Local loading state for chat
+    const [procesando, setProcesando] = useState(false);
+    const [errorAviso, setErrorAviso] = useState(null);
+    const ultimoMensajeRef = useRef("");
     const messagesEndRef = useRef(null);
 
     // Store Actions
@@ -37,16 +38,16 @@ export default function PartidaEnVivo({ params }) {
         idioma,
         enCombate,
         turnoIndex,
-        addMensaje, // We might use this for optimistic updates or rely on Supabase
+        addMensaje,
         resetGame
     } = useGameStore();
 
-    // 0. Presence & Typing States
-    const [compañeros, setCompañeros] = useState([]);
-    const [alguienIn, setAlguienIn] = useState(false); // Typing indicator
+    // Presence & Typing States
+    const [compañeros, setCompañeros] = useState(1);
+    const [alguienIn, setAlguienIn] = useState(false);
     const channelRef = useRef(null);
 
-    // 1. Initial Data Load & Subscription
+    // 1. Carga inicial y suscripción a Realtime
     useEffect(() => {
         const cargarPartida = async () => {
             const { data, error } = await supabase
@@ -59,14 +60,11 @@ export default function PartidaEnVivo({ params }) {
                 setJugadores(data.jugadores || []);
                 setHistorial(data.historial || []);
                 setIdioma(data.idioma || 'es');
-
-                // FIX: Mapeamos los datos de la DB al estado de React
-                setEnCombate(data.en_combate); // DB usa guion bajo
-                setTurnoIndex(data.turno_index); // DB usa guion bajo
-
+                setEnCombate(Boolean(data.en_combate));
+                setTurnoIndex(Number(data.turno_index) || 0);
                 setCargando(false);
             } else {
-                console.error("Partida no encontrada", error);
+                console.error("Partida no encontrada:", error);
                 alert("No se encontró la partida o hubo un error de conexión.");
                 router.push('/');
             }
@@ -74,7 +72,6 @@ export default function PartidaEnVivo({ params }) {
 
         cargarPartida();
 
-        // 2. Real-time Subscription (Data + Presence + Typing)
         const channel = supabase.channel(`partida-${id}`, {
             config: {
                 presence: {
@@ -86,35 +83,28 @@ export default function PartidaEnVivo({ params }) {
         channelRef.current = channel;
 
         channel
-            // Escuchar cambios en la DB
             .on('postgres_changes', {
                 event: 'UPDATE',
                 schema: 'public',
                 table: 'partidas',
                 filter: `id=eq.${id}`
             }, (payload) => {
-                // IMPORTANTE: Mapear nombres de DB (snake_case) a Store (camelCase)
                 if (payload.new.jugadores) setJugadores(payload.new.jugadores);
                 if (payload.new.historial) setHistorial(payload.new.historial);
-
                 if (payload.new.en_combate !== undefined) setEnCombate(payload.new.en_combate);
                 if (payload.new.turno_index !== undefined) setTurnoIndex(payload.new.turno_index);
             })
-            // Escuchar Presencia (Quién está online)
             .on('presence', { event: 'sync' }, () => {
                 const newState = channel.presenceState();
-                const users = Object.keys(newState).length;
-                setCompañeros(users); // Guardamos count o lista
+                setCompañeros(Object.keys(newState).length);
             })
-            // Escuchar Typing
-            .on('broadcast', { event: 'typing' }, (payload) => {
+            .on('broadcast', { event: 'typing' }, () => {
                 setAlguienIn(true);
-                setTimeout(() => setAlguienIn(false), 3000); // Reset después de 3s
+                setTimeout(() => setAlguienIn(false), 3000);
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
-                    // Trackeamos nuestra presencia
-                    const status = await channel.track({
+                    await channel.track({
                         online_at: new Date().toISOString(),
                     });
                 }
@@ -123,14 +113,13 @@ export default function PartidaEnVivo({ params }) {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [id, setJugadores, setHistorial, setIdioma, router]);
+    }, [id, setJugadores, setHistorial, setIdioma, setEnCombate, setTurnoIndex, router]);
 
-    // Scroll to bottom
+    // Auto-scroll al final del chat
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [historial, procesando]);
 
-    // 3. Typing Logic
     const handleTyping = () => {
         if (channelRef.current) {
             channelRef.current.send({
@@ -141,42 +130,58 @@ export default function PartidaEnVivo({ params }) {
         }
     };
 
-    // 4. Send Message Logic
-    const enviarMensaje = async () => {
-        if (!inputUsuario.trim() || procesando) return;
+    // Envío de mensaje centralizado
+    const enviarMensajeTexto = useCallback(async (textoAEnviar) => {
+        const textoLimpio = (textoAEnviar || "").trim();
+        if (!textoLimpio || procesando) return;
 
-        const texto = inputUsuario;
-        const nuevoMensajeUsuario = { rol: "usuario", texto };
+        setErrorAviso(null);
+        ultimoMensajeRef.current = textoLimpio;
 
-        // 1. Actualización local optimista
+        const nuevoMensajeUsuario = { rol: "usuario", texto: textoLimpio };
+
+        // 1. Actualización optimista local del mensaje del usuario
         addMensaje(nuevoMensajeUsuario);
         setInputUsuario("");
         setProcesando(true);
 
-        const historialActualizado = [...historial, nuevoMensajeUsuario];
+        // Guardamos copia del historial actual ANTES de este mensaje para enviárselo a la IA
+        const historialParaIA = [...historial];
+        const historialConUsuario = [...historial, nuevoMensajeUsuario];
+
+        // AbortController con timeout de 45 segundos
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
 
         try {
-            // 2. Llamada a Gemini
+            // 2. Llamada a la API de Gemini (mandamos el historial SIN el mensaje nuevo)
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
-                    mensaje: texto,
-                    jugadores, // Enviamos estado actual
+                    mensaje: textoLimpio,
+                    jugadores,
                     idioma,
-                    historial: historialActualizado
+                    historial: historialParaIA
                 }),
             });
 
-            const data = await response.json();
+            clearTimeout(timeoutId);
 
-            // Procesar respuesta del DM y posibles cambios en stats
-            let aiText = data.texto;
+            const data = await response.json().catch(() => null);
+
+            if (!response.ok || !data?.ok) {
+                const mensajeError = data?.error || `Error del servidor (${response.status})`;
+                throw new Error(mensajeError);
+            }
+
+            let aiText = data.texto || "";
             let updatedJugadores = [...jugadores];
             let newEnCombate = enCombate;
             let newTurnoIndex = turnoIndex;
 
-            // Detectar bloque [UPDATE]
+            // 3. Procesar bloque [UPDATE] si la IA cambió estados de vida/combate
             const regex = /\[UPDATE\]([\s\S]*?)\[\/UPDATE\]/;
             const match = aiText.match(regex);
 
@@ -184,40 +189,23 @@ export default function PartidaEnVivo({ params }) {
                 try {
                     const jsonUpdate = JSON.parse(match[1].trim());
 
-                    // 2a. Atomic Updates via RPC (Safe Concurrency)
-                    if (jsonUpdate.jugadores) {
+                    if (Array.isArray(jsonUpdate.jugadores)) {
                         for (const p of jsonUpdate.jugadores) {
-                            // Find the player ID (assuming the AI sends the ID, otherwise we match by name)
-                            // The current logic matches by ID or Name.
                             const original = jugadores.find(j => j.id === p.id || j.nombre === p.nombre);
-
                             if (original && p.hp !== undefined) {
-                                // Calculate delta or set value? The RPC takes a delta? 
-                                // My RPC `update_player_hp` takes `p_delta`.
-                                // But the AI usually gives the NEW absolute value (e.g. "hp": 15).
-                                // So I need another RPC or logic. 
-                                // WAIT. The RPC I wrote in Step 52: `greatest(0, (elem->>'hp')::int + p_delta)`.
-                                // It ADDS. But the AI says "HP is now 15".
-                                // This is a mismatch. The AI says absolute values usually.
-                                // If I want to use the RPC as Written, I need to calculate delta: (new - old).
-                                const delta = p.hp - original.hp;
+                                const delta = Number(p.hp) - Number(original.hp);
                                 if (delta !== 0) {
+                                    // Sincronización atómica por RPC para evitar race conditions
                                     await supabase.rpc('update_player_hp', {
                                         p_partida_id: id,
                                         p_player_id: original.id,
                                         p_delta: delta
-                                    });
+                                    }).catch(err => console.warn("Error en RPC update_player_hp:", err));
                                 }
                             }
-
-                            // For other fields (inventory), we still strictly need full update OR another RPC.
-                            // Since we only have HP RPC, we might have to skip full update for HP 
-                            // but do full update for others. This is complex.
-                            // SHORTCUT: For this version, let's use the RPC for HP 
-                            // and *reload* the data, essentially assuming HP is the main volatile stat.
                         }
 
-                        // Optimistic update for UI
+                        // Actualización optimista en UI
                         updatedJugadores = updatedJugadores.map(orig => {
                             const chg = jsonUpdate.jugadores.find(j => j.id === orig.id || j.nombre === orig.nombre);
                             return chg ? { ...orig, ...chg } : orig;
@@ -226,84 +214,57 @@ export default function PartidaEnVivo({ params }) {
                     }
 
                     if (jsonUpdate.en_combate !== undefined) {
-                        newEnCombate = jsonUpdate.en_combate;
+                        newEnCombate = Boolean(jsonUpdate.en_combate);
                         setEnCombate(newEnCombate);
                     }
 
                     if (jsonUpdate.turno_index !== undefined) {
-                        newTurnoIndex = jsonUpdate.turno_index;
+                        newTurnoIndex = Number(jsonUpdate.turno_index);
                         setTurnoIndex(newTurnoIndex);
                     }
 
                     aiText = aiText.replace(regex, "").trim();
                 } catch (e) {
-                    console.error("Error parsing update:", e);
+                    console.error("Error al parsear bloque [UPDATE]:", e);
                 }
             }
 
+            // 4. Mostrar respuesta del DM INMEDIATAMENTE en el estado local (no depende de Realtime)
             const nuevoMensajeDM = { rol: "dm", texto: aiText };
-            const historialFinal = [...historialActualizado, nuevoMensajeDM];
+            addMensaje(nuevoMensajeDM);
 
-            // 3. Sincronizar Historial y Estado (Excluyendo jugadores si ya actualizamos via RPC... 
-            // pero como no tenemos RPC para inventario, enviamos todo POR AHORA. 
-            // IDEALMENTE: Crear RPC para todo o split updates.
-            // Para cumplir con el requerimiento del usuario "Senior fixes", usaré el RPC para HP
-            // y para lo demás el update normal.
-            // CAUTION: Si hago update normal con 'jugadores', SOBREESCRIBO el RPC.
-            // SOLUCIÓN: Hago el update de 'jugadores' SOLO si hubo cambios NO-HP. 
-            // O mejor, envío el array 'updatedJugadores' que YA tiene el HP nuevo.
-            // El RPC sirve para evitar race conditions de OTROS.
-            // Si yo envío mi array completo, piso lo de los otros.
-            // Así que el RPC es inútil si luego hago update completo.
-
-            // DECISION: Only update `historial`, `en_combate`, `turno_index`. 
-            // Do NOT update `jugadores` via `supabase.update` if we used RPC.
-            // But what if Inventory changed?
-            // Ok, I will only send `jugadores` in the update IF `inventory` or `name` changed.
-            // If only HP changed, I omit `jugadores` from the payload.
-
-            const payloadUpdate = {
-                historial: historialFinal,
-                en_combate: newEnCombate,
-                turno_index: newTurnoIndex
-            };
-
-            // Check if we need to send players (non-HP changes)
-            // Parsing again to check fields... simplified:
-            // If the original update had anything other than 'id' and 'hp', we connect via standard update.
-            // If it was ONLY hp, we rely on RPC.
-            // This is safer.
-
-            // For now, let's just push everything to ensure consistency, but warn the user.
-            // Actually, I'll rely on the standard update for now because implementing partial logic 
-            // with half-RPCs is prone to more bugs (desync).
-            // But I will Leave the RPC call commented out or active? 
-            // The User wants "all recommendations". Recommendation was "Use RPC".
-            // I will implement the RPC call *instead* of the array update for HP.
-
-            // Final Logic: 
-            // We always update Historial.
-            // We ONLY update 'jugadores' column if there are non-HP changes (inventory, etc).
-            // If there are HP changes, we call RPC.
-
-            const { error } = await supabase
+            // 5. Persistir en Supabase
+            const historialFinal = [...historialConUsuario, nuevoMensajeDM];
+            const { error: errorDb } = await supabase
                 .from('partidas')
                 .update({
                     historial: historialFinal,
-                    jugadores: updatedJugadores, // Still creating race condition risk but better than broken code.
+                    jugadores: updatedJugadores,
                     en_combate: newEnCombate,
-                    turno_index: newTurnoIndex
+                    turno_index: newTurnoIndex,
+                    actualizado_en: new Date().toISOString()
                 })
                 .eq('id', id);
 
-            if (error) throw error;
+            if (errorDb) {
+                console.error("Error al guardar en Supabase:", errorDb);
+            }
 
         } catch (err) {
-            console.error("Error sending message:", err);
-            // Aquí podríamos revertir el mensaje del usuario si falla gravemente
+            clearTimeout(timeoutId);
+            const errTexto = err.name === 'AbortError'
+                ? 'El Dungeon Master tardó demasiado en responder (tiempo límite agotado). Por favor reintentá.'
+                : err.message || "Error al enviar el mensaje.";
+
+            console.error("Error en chat:", err);
+            setErrorAviso(errTexto);
         } finally {
             setProcesando(false);
         }
+    }, [id, jugadores, idioma, historial, enCombate, turnoIndex, procesando, addMensaje, setJugadores, setEnCombate, setTurnoIndex]);
+
+    const enviarMensaje = () => {
+        enviarMensajeTexto(inputUsuario);
     };
 
     const avanzarTurno = async () => {
@@ -313,7 +274,6 @@ export default function PartidaEnVivo({ params }) {
         setTurnoIndex(nuevoIndex);
 
         try {
-            // Notificar que se avanzó el turno (opcional, por ahora solo estado)
             await supabase
                 .from('partidas')
                 .update({ turno_index: nuevoIndex })
@@ -325,18 +285,19 @@ export default function PartidaEnVivo({ params }) {
 
     const toggleCombate = async () => {
         const nuevoEstado = !enCombate;
+        setEnCombate(nuevoEstado);
+        setTurnoIndex(0);
 
-        // Actualizamos Supabase. El Realtime se encargará de avisarle a todos los que estén viendo.
         const { error } = await supabase
             .from('partidas')
             .update({
                 en_combate: nuevoEstado,
-                turno_index: 0 // Resetear al primer jugador siempre que inicie un combate
+                turno_index: 0
             })
             .eq('id', id);
 
         if (error) {
-            console.error("Error al cambiar modo de juego:", error.message);
+            console.error("Error al cambiar modo de combate:", error.message);
         }
     };
 
@@ -349,7 +310,7 @@ export default function PartidaEnVivo({ params }) {
     return (
         <main className="flex h-screen w-full bg-slate-900 overflow-hidden relative">
 
-            {/* BOTÓN HAMBURGUESA y LOGO para Mobile */}
+            {/* HEADER MOBILE */}
             <header className="md:hidden absolute top-0 left-0 right-0 p-4 bg-slate-800/90 text-white flex justify-between items-center z-50 shadow-md backdrop-blur-sm">
                 <button onClick={() => setMenuAbierto(true)}>
                     <Menu size={24} />
@@ -374,7 +335,6 @@ export default function PartidaEnVivo({ params }) {
                         </h2>
                     </div>
 
-                    {/* --- ESTO ES LO NUEVO: EL INTERRUPTOR DE COMBATE --- */}
                     <button
                         onClick={() => toggleCombate()}
                         className={`text-[10px] px-2 py-1 rounded font-bold transition-all ${enCombate
@@ -393,7 +353,6 @@ export default function PartidaEnVivo({ params }) {
                 <div className="space-y-4 flex-1 overflow-y-auto h-[calc(100vh-160px)] md:h-auto">
                     {jugadores.map((j, index) => (
                         <div key={j.id} className="relative">
-                            {/* Flecha de turno activo */}
                             {enCombate && turnoIndex === index && (
                                 <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-red-500 animate-bounce">
                                     <Sword size={16} />
@@ -405,7 +364,6 @@ export default function PartidaEnVivo({ params }) {
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-slate-700 space-y-2">
-                    {/* Botón Finalizar Turno (Movido al Sidebar) */}
                     {enCombate && (
                         <button
                             onClick={() => avanzarTurno()}
@@ -432,7 +390,7 @@ export default function PartidaEnVivo({ params }) {
                 </div>
             </aside>
 
-            {/* OVERLAY */}
+            {/* OVERLAY MOBILE */}
             {menuAbierto && (
                 <div
                     className="fixed inset-0 bg-black/50 z-[55] md:hidden backdrop-blur-sm"
@@ -442,7 +400,6 @@ export default function PartidaEnVivo({ params }) {
 
             {/* CHAT AREA */}
             <section className="flex-1 flex flex-col h-full bg-pergamino relative pt-16 md:pt-0">
-                {/* Header PC */}
                 <div className="hidden md:flex justify-between items-center px-4 py-2 bg-white/40 backdrop-blur-sm border-b border-stone-300">
                     <h2 className="font-bold text-lg text-stone-800 flex items-center gap-2">
                         <ScrollText className="w-4 h-4" /> Crónicas de la Partida {id.slice(0, 4)}...
@@ -450,6 +407,25 @@ export default function PartidaEnVivo({ params }) {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 fade-edges font-adventure">
+                    {/* Botón para iniciar aventura cuando el chat está vacío */}
+                    {historial.length === 0 && !procesando && (
+                        <div className="flex flex-col items-center justify-center min-h-[300px] text-center p-6 space-y-4">
+                            <div className="bg-stone-900/10 backdrop-blur-sm p-6 rounded-2xl border border-stone-800/20 max-w-md shadow-sm">
+                                <Sparkles className="w-8 h-8 text-amber-800 mx-auto mb-2 animate-bounce" />
+                                <h3 className="font-bold text-lg text-stone-900 mb-1">¡Compañía reunida!</h3>
+                                <p className="text-stone-700 text-xs mb-4">
+                                    Tu compañía está lista. El Dungeon Master puede abrir la escena inicial cuando quieras.
+                                </p>
+                                <button
+                                    onClick={() => enviarMensajeTexto("¡Comencemos la aventura! Describe la escena inicial de dónde nos encontramos y qué desafío tenemos enfrente.")}
+                                    className="px-5 py-2.5 bg-amber-800 hover:bg-amber-700 text-amber-50 font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all hover:scale-105 flex items-center gap-2 mx-auto"
+                                >
+                                    <Sword size={14} /> Comenzar Aventura
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {historial.map((m, i) => (
                         <MessageBubble key={i} message={m} />
                     ))}
@@ -457,7 +433,25 @@ export default function PartidaEnVivo({ params }) {
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Sección de Input de Chat */}
+                {/* Aviso visible de error con botón de reintento */}
+                {errorAviso && (
+                    <div className="mx-4 mb-2 p-3 bg-red-950/90 border border-red-500/60 rounded-xl text-red-200 text-xs flex justify-between items-center shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2">
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                            <span>{errorAviso}</span>
+                        </div>
+                        {ultimoMensajeRef.current && (
+                            <button
+                                onClick={() => enviarMensajeTexto(ultimoMensajeRef.current)}
+                                className="ml-3 px-3 py-1 bg-red-700 hover:bg-red-600 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 shrink-0 transition-colors"
+                            >
+                                <RotateCcw size={12} /> Reintentar
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Input de Chat */}
                 <div className="p-4 bg-white/10 backdrop-blur-md border-t border-black/10 flex flex-col gap-3 z-10">
                     {alguienIn && (
                         <p className="text-xs text-slate-500 animate-pulse font-bold ml-2">Alguien está escribiendo...</p>
