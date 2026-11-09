@@ -1,50 +1,138 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mesa Arcana — Dungeon Master con IA (D&D 5e)
 
-## Getting Started
+**Mesa Arcana** es una aplicación web interactiva donde una Inteligencia Artificial asume el rol de **Dungeon Master** para narrar partidas de rol de **Dungeons & Dragons 5ª Edición (D&D 5e)**. Permite jugar en solitario o en grupo con amigos de manera online, cada uno encarnando a su propio héroe.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🌟 Características Principales
+
+- **Dungeon Master con IA en Tiempo Real:** Narración inmersiva impulsada por Google Gemini (`gemini-3.5-flash`). El DM arbitra acciones, describe escenarios, plantea desafíos y actualiza el estado del grupo (vida, inventario y modo de combate).
+- **Salón de Héroes y Autenticación:** Registro y login de usuarios con Supabase Auth. Gestión de fichas permanentes de D&D 5e (clase, raza, vida, armadura y atributos).
+- **Parties Online con Invitación por Código:** Creación de salas multijugador con código único de 6 caracteres (ej. `K9X2B7`). Los jugadores se unen con su personaje y comparten la mesa en tiempo real.
+- **Combate por Turnos Sincronizado:** Modo combate con indicador de turnos, seguimiento de iniciativa y actualización concurrente de puntos de vida (PV) mediante funciones atómicas en la base de datos.
+- **Estética Inmersiva de Pergamino:** Diseño visual inspirado en las hojas clásicas de D&D, con textura de pergamino procedural en SVG, marcos góticos, filigranas de dragón y tipografías de fantasía (*Cinzel* y *EB Garamond*).
+
+---
+
+## 🛠️ Stack Tecnológico
+
+- **Frontend & Framework:** [Next.js 16](https://nextjs.org/) (App Router, React 19)
+- **Estilos:** [Tailwind CSS v4](https://tailwindcss.com/) + Google Fonts (*Cinzel* y *EB Garamond*)
+- **Gestión de Estado:** [Zustand 5](https://zustand-demo.pmnd.rs/)
+- **Backend & Base de Datos:** [Supabase](https://supabase.com/) (PostgreSQL 15, Auth, Row Level Security y Realtime Presence/Broadcast)
+- **Motor de Inteligencia Artificial:** [@google/generative-ai](https://www.npmjs.com/package/@google/generative-ai) (Google Gemini API)
+- **Iconografía:** [Lucide React](https://lucide.dev/)
+
+---
+
+## 📋 Requisitos Previos
+
+1. **Node.js:** Versión 18.18 o superior (se recomienda Node 20 LTS).
+2. **Proyecto en Supabase:** Cuenta gratuita en [supabase.com](https://supabase.com/).
+3. **Clave de Google AI Studio:** Clave de API para acceder a los modelos de Gemini desde [aistudio.google.com](https://aistudio.google.com/).
+
+---
+
+## ⚙️ Configuración del Entorno
+
+Creá un archivo `.env.local` en la raíz del proyecto con las siguientes variables:
+
+```env
+# Conexión con Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://<tu-project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<tu-publishable-key sb_publishable_...>
+
+# Google Gemini AI Studio
+GEMINI_API_KEY=<tu-api-key-de-google-ai-studio>
+GEMINI_MODEL=gemini-3.5-flash
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> **Nota de seguridad:** Nunca compartas ni hagas commit de tus claves privadas o credenciales de Supabase en repositorios públicos.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🗄️ Configuración de la Base de Datos
 
-## Learn More
+En el panel de tu proyecto en Supabase, abrí el **SQL Editor** y ejecutá los scripts en el siguiente orden:
 
-To learn more about Next.js, take a look at the following resources:
+1. **`dnd_dm_database_limpio.sql`**: Crea la estructura base de partidas, funciones de sincronización de vida (`update_player_hp`) y tablas iniciales.
+2. **`dnd_dm_auth.sql`**: Configura la extensión de perfiles de usuario, fichas permanentes de personajes, triggers de registro automático y políticas de seguridad RLS.
+3. **`dnd_dm_parties.sql`**: Implementa el sistema multijugador de parties, generación de códigos únicos de 6 caracteres, vistas relacionales (`v_parties_usuario`, `v_miembros_party`) y funciones RPC para crear y unirse a salas.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> Para más detalles sobre las tablas, vistas, triggers y funciones de la base de datos, consultá el archivo técnico [`docs/base-de-datos.md`](docs/base-de-datos.md).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🚀 Instalación y Ejecución Local
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Instalar dependencias:**
+   ```bash
+   npm install
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. **Iniciar el servidor de desarrollo:**
+   ```bash
+   npm run dev
+   ```
+   Abrí [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-## Panel del DM (`/dm`)
+3. **Verificar calidad del código y compilación:**
+   ```bash
+   # Comprobar reglas de ESLint
+   npm run lint
 
-Dashboard para llevar una sesión: iniciativa, PV, CA, condiciones, turnos/rondas, notas del encuentro y registro de combate. Se guarda solo (autosave) y se puede cargar, duplicar, exportar e importar.
+   # Generar build optimizado para producción
+   npm run build
+   ```
 
-**Setup (Supabase)**
-1. Crea `.env.local` con `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-2. Ejecuta `supabase_dm_dashboard.sql` en el SQL Editor (añade columnas a `partidas`; no rompe el chat con IA).
-3. `npm run dev` → abre `/dm`.
+---
 
-Sin variables de entorno el panel funciona en modo local (localStorage).
+## 📖 Cómo Jugar
 
-**Atajos:** `Espacio`/`N`/`→` siguiente turno · `P`/`←` anterior · `A` añadir · `Ctrl+Z` deshacer.
-**Campo de PV:** `7` daño · `+7` curación · `t5` PV temporales · `⇧+Enter` cura.
+### Modo Rápido (En Solitario / Mesa Local)
+1. Entrá en la portada principal.
+2. Elegí o creá hasta 5 personajes con su nombre, raza y clase (Guerrero, Mago, Pícaro, Clérigo, etc.).
+3. Hacé clic en **Iniciar Partida**.
+4. Escribí tu primera acción o pregunta en el chat y el Dungeon Master comenzará a narrar la aventura.
+
+### Modo Multijugador (Party Online con Amigos)
+1. Iniciá sesión con tu cuenta de usuario (o registrate en `/registro`).
+2. Entrá en **Salón de Parties** (`/parties`).
+3. Creá una nueva party (por ejemplo *"La Cripta del Nigromante"*). Se generará automáticamente un **código de invitación de 6 caracteres**.
+4. Compartí el código con tus amigos para que se unan desde sus cuentas y seleccionen sus héroes.
+5. Una vez reunidos en el lobby, iniciá la aventura y todos los miembros verán la misma crónica e interactuarán por turnos en vivo.
+
+---
+
+## 📂 Estructura del Proyecto
+
+```
+DnD-DM/
+├── app/
+│   ├── api/chat/route.js     # Endpoint del Dungeon Master con Gemini API
+│   ├── components/           # Componentes modulares (PlayerCard, MessageBubble, ChatInput)
+│   │   └── ui/               # Elementos ornamentales (DragonCorner, BannerTitulo, VitralDM)
+│   ├── juego/[id]/page.js    # Mesa de juego en vivo con Realtime
+│   ├── parties/page.js       # Listado y creación de parties online
+│   ├── party/[codigo]/page.js# Lobby en tiempo real previo a la partida
+│   ├── personajes/page.js    # Fichas permanentes de héroes D&D 5e
+│   ├── login/page.js         # Inicio de sesión con Supabase Auth
+│   ├── registro/page.js      # Registro de nuevas cuentas
+│   └── page.js               # Portada y mesa de preparación
+├── docs/
+│   └── base-de-datos.md      # Documentación académica de PostgreSQL (parcial)
+├── lib/
+│   └── supabase.js           # Cliente configurado de Supabase
+├── store/
+│   └── useGameStore.js       # Store global de Zustand (historial, turnos, jugadores)
+├── dnd_dm_database_limpio.sql# Script SQL base
+├── dnd_dm_auth.sql           # Script SQL de autenticación y personajes
+└── dnd_dm_parties.sql        # Script SQL de parties y multijugador
+```
+
+---
+
+## 📜 Licencia
+
+Proyecto desarrollado con fines académicos y de entretenimiento bajo licencia MIT.
+Contenido y reglas de rol basados en el SRD (System Reference Document) de D&D 5ª Edición.

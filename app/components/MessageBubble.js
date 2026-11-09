@@ -17,8 +17,8 @@ export const MessageBubble = ({ message }) => {
 
                     {/* Encabezado del DM */}
                     <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#8a6a3e]/40">
-                        <span className="font-cinzel text-xs font-bold uppercase tracking-widest text-[#7b1f1f] drop-shadow-sm flex items-center gap-2">
-                            <span>📜</span> Crónicas del Dungeon Master
+                        <span className="font-cinzel text-xs font-bold uppercase tracking-widest text-[#7b1f1f] drop-shadow-sm">
+                            Crónica del Dungeon Master
                         </span>
                     </div>
 
@@ -37,8 +37,8 @@ export const MessageBubble = ({ message }) => {
                 <div className="flex items-center justify-between gap-2 mb-1.5 pb-1 border-b border-[#8a6a3e]/30">
                     <span className="font-cinzel text-[11px] font-bold uppercase tracking-wider text-[#c8a45a]">
                         {message.personaje 
-                            ? `⚔️ ${message.personaje} (${message.autor || 'Aventurero'})`
-                            : `⚔️ ${message.autor || 'Acción de la Compañía'}`
+                            ? `${message.personaje} (${message.autor || 'Aventurero'})`
+                            : (message.autor || 'Acción de la Compañía')
                         }
                     </span>
                 </div>

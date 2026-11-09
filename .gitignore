@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# debug / temporary logs
+api_error_log.txt
+models*.txt
+*.log
+

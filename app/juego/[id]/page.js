@@ -12,11 +12,10 @@ import { LoadingDM } from '../../components/LoadingDM';
 import { PlayerCard } from '../../components/PlayerCard';
 import { UserNav } from '../../components/UserNav';
 import { DragonCorner } from '../../components/ui/DragonCorner';
-import { BannerTitulo } from '../../components/ui/BannerTitulo';
 import { VitralDM } from '../../components/ui/VitralDM';
 
 import {
-    Dices, ScrollText, UserPlus, Menu, X, ArrowLeft, Sword, AlertTriangle, RotateCcw, Users, Shield
+    ScrollText, UserPlus, Menu, X, ArrowLeft, AlertTriangle, RotateCcw, Users, Shield
 } from 'lucide-react';
 
 export default function PartidaEnVivo({ params }) {
@@ -64,7 +63,6 @@ export default function PartidaEnVivo({ params }) {
                 return;
             }
 
-            // Consultar datos de perfil del usuario logueado
             const { data: perfil } = await supabase
                 .from('perfiles')
                 .select('nombre_usuario')
@@ -146,7 +144,6 @@ export default function PartidaEnVivo({ params }) {
         };
     }, [id, setJugadores, setHistorial, setIdioma, setEnCombate, setTurnoIndex, router]);
 
-    // Auto-scroll al final del chat
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [historial, procesando]);
@@ -161,12 +158,10 @@ export default function PartidaEnVivo({ params }) {
         }
     };
 
-    // Identificar el personaje del usuario actual en esta mesa
     const miPersonajeEnMesa = jugadores.find(j => j.usuario_id === usuarioActual?.id);
     const personajeTurnoActivo = jugadores[turnoIndex];
     const esMiTurno = !enCombate || !personajeTurnoActivo?.usuario_id || (personajeTurnoActivo?.usuario_id === usuarioActual?.id);
 
-    // Envío de mensaje centralizado
     const enviarMensajeTexto = useCallback(async (textoAEnviar) => {
         const textoLimpio = (textoAEnviar || "").trim();
         if (!textoLimpio || procesando) return;
@@ -184,7 +179,6 @@ export default function PartidaEnVivo({ params }) {
             personaje: personajeNombre
         };
 
-        // 1. Actualización optimista local
         addMensaje(nuevoMensajeUsuario);
         setInputUsuario("");
         setProcesando(true);
@@ -192,7 +186,6 @@ export default function PartidaEnVivo({ params }) {
         const historialParaIA = [...historial];
         const historialConUsuario = [...historial, nuevoMensajeUsuario];
 
-        // Texto contextualizado para que la IA sepa qué aventurero habla
         const textoParaGemini = personajeNombre
             ? `${personajeNombre} (${autorNombre}) dice o realiza: ${textoLimpio}`
             : `${autorNombre} dice: ${textoLimpio}`;
@@ -201,7 +194,6 @@ export default function PartidaEnVivo({ params }) {
         const timeoutId = setTimeout(() => controller.abort(), 45000);
 
         try {
-            // 2. Llamada a la API de Gemini
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -228,7 +220,6 @@ export default function PartidaEnVivo({ params }) {
             let newEnCombate = enCombate;
             let newTurnoIndex = turnoIndex;
 
-            // 3. Procesar bloque [UPDATE]
             const regex = /\[UPDATE\]([\s\S]*?)\[\/UPDATE\]/;
             const match = aiText.match(regex);
 
@@ -274,11 +265,9 @@ export default function PartidaEnVivo({ params }) {
                 }
             }
 
-            // 4. Mostrar respuesta del DM inmediatamente
             const nuevoMensajeDM = { rol: "dm", texto: aiText };
             addMensaje(nuevoMensajeDM);
 
-            // 5. Persistir en Supabase
             const historialFinal = [...historialConUsuario, nuevoMensajeDM];
             const { error: errorDb } = await supabase
                 .from('partidas')
@@ -298,7 +287,7 @@ export default function PartidaEnVivo({ params }) {
         } catch (err) {
             clearTimeout(timeoutId);
             const errTexto = err.name === 'AbortError'
-                ? 'El Dungeon Master tardó demasiado en responder (tiempo límite agotado). Por favor reintentá.'
+                ? 'El Dungeon Master tardó demasiado en responder. Por favor reintentá.'
                 : err.message || "Error al enviar el mensaje.";
 
             console.error("Error en chat:", err);
@@ -350,7 +339,7 @@ export default function PartidaEnVivo({ params }) {
         <div className="h-screen w-full bg-[#18110c] flex flex-col items-center justify-center text-amber-100 gap-4">
             <VitralDM pensando={true} />
             <p className="font-cinzel text-sm tracking-widest uppercase text-[#c8a45a] animate-pulse">
-                Abriendo la Mesa Arcana...
+                Cargando Mesa...
             </p>
         </div>
     );
@@ -363,9 +352,8 @@ export default function PartidaEnVivo({ params }) {
                 <button onClick={() => setMenuAbierto(true)} className="p-1 hover:text-[#c8a45a]">
                     <Menu size={22} />
                 </button>
-                <div className="flex items-center gap-2 font-cinzel font-bold text-sm text-[#fef08a]">
-                    <Dices className="w-4 h-4 text-[#c8a45a]" />
-                    <span>Mesa Arcana</span>
+                <div className="font-cinzel font-bold text-sm text-[#fef08a] tracking-wider">
+                    Mesa Arcana
                 </div>
                 <span className="text-[10px] font-cinzel bg-[#3d2716] text-[#c8a45a] px-2 py-0.5 rounded-full border border-[#8a6a3e]/40">
                     {jugadores.length} PJ
@@ -389,11 +377,11 @@ export default function PartidaEnVivo({ params }) {
                     <button
                         onClick={() => toggleCombate()}
                         className={`text-[10px] font-cinzel px-2.5 py-1 rounded font-bold uppercase tracking-wider transition-all border ${enCombate
-                            ? 'bg-[#7b1f1f] text-[#fef08a] border-[#c8a45a] animate-pulse shadow-[0_0_12px_rgba(123,31,31,0.8)]'
+                            ? 'bg-[#7b1f1f] text-[#fef08a] border-[#c8a45a] shadow-[0_0_12px_rgba(123,31,31,0.8)]'
                             : 'bg-[#241510] text-[#c8a45a] border-[#3d2716] hover:bg-[#3d2716] hover:text-amber-100'
                             }`}
                     >
-                        {enCombate ? '⚔️ Combate' : '⚔️ Iniciar'}
+                        {enCombate ? 'Combate Activo' : 'Modo Combate'}
                     </button>
 
                     <button onClick={() => setMenuAbierto(false)} className="md:hidden text-[#c8a45a]">
@@ -402,16 +390,12 @@ export default function PartidaEnVivo({ params }) {
                 </div>
 
                 {/* Lista de Fichas de Personajes */}
-                <div className="space-y-3.5 flex-1 overflow-y-auto pr-1">
+                <div className="space-y-3 flex-1 overflow-y-auto pr-1">
                     {jugadores.map((j, index) => {
                         const esMiPersonaje = j.usuario_id === usuarioActual?.id;
+                        const esTurnoDeEste = enCombate && turnoIndex === index;
                         return (
-                            <div key={j.id} className="relative">
-                                {enCombate && turnoIndex === index && (
-                                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-[#fef08a] animate-bounce z-20 drop-shadow-[0_0_8px_rgba(254,240,138,0.8)]">
-                                        <Sword size={18} />
-                                    </div>
-                                )}
+                            <div key={j.id} className={`relative rounded-2xl transition-all ${esTurnoDeEste ? 'ring-2 ring-[#c8a45a] shadow-lg' : ''}`}>
                                 {esMiPersonaje && (
                                     <span className="absolute right-3 top-2 z-20 text-[9px] font-cinzel font-bold bg-[#7b1f1f] text-[#fef08a] border border-[#c8a45a] px-2 py-0.5 rounded shadow">
                                         Tu Héroe
@@ -423,16 +407,14 @@ export default function PartidaEnVivo({ params }) {
                     })}
                 </div>
 
-                {/* Controles de Navegación del Sidebar */}
+                {/* Controles del Sidebar */}
                 <div className="mt-4 pt-4 border-t-2 border-[#3d2716] space-y-2 shrink-0">
                     {enCombate && (
                         <button
                             onClick={() => avanzarTurno()}
-                            className="group relative flex items-center justify-center gap-2 bg-gradient-to-r from-[#7b1f1f] via-[#991b1b] to-[#7b1f1f] border border-[#c8a45a] hover:brightness-110 text-[#fef08a] w-full py-2.5 rounded-lg font-cinzel font-bold tracking-widest uppercase text-[10px] shadow-lg transition-all hover:scale-[1.02] mb-2"
+                            className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#7b1f1f] via-[#991b1b] to-[#7b1f1f] border border-[#c8a45a] hover:brightness-110 text-[#fef08a] w-full py-2.5 rounded-lg font-cinzel font-bold tracking-widest uppercase text-[10px] shadow-lg transition-all mb-2 cursor-pointer"
                         >
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#fef08a] animate-pulse"></span>
                             Finalizar Turno
-                            <Sword size={14} className="group-hover:rotate-45 transition-transform" />
                         </button>
                     )}
 
@@ -447,7 +429,7 @@ export default function PartidaEnVivo({ params }) {
                         href="/personajes"
                         className="flex items-center gap-2 text-xs font-cinzel text-stone-400 hover:text-amber-100 transition-colors w-full py-1"
                     >
-                        <Shield size={14} /> Mis Héroes
+                        <Shield size={14} /> Mis Personajes
                     </Link>
 
                     <button
@@ -474,9 +456,9 @@ export default function PartidaEnVivo({ params }) {
                 />
             )}
 
-            {/* CHAT AREA (Pergamino central) */}
+            {/* CHAT AREA */}
             <section className="flex-1 flex flex-col h-full bg-[#18110c] relative pt-14 md:pt-0">
-                {/* Cabecera superior con Vitral y UserNav */}
+                {/* Cabecera superior sobria */}
                 <div className="hidden md:flex justify-between items-center px-6 py-2.5 bg-[#140c08] text-amber-100 border-b-2 border-[#3d2716] shadow-md">
                     <div className="flex items-center gap-3">
                         <VitralDM pensando={procesando} className="scale-75 -my-2" />
@@ -484,15 +466,15 @@ export default function PartidaEnVivo({ params }) {
                             <h2 className="font-cinzel font-bold text-sm text-[#fef08a] flex items-center gap-2">
                                 <ScrollText className="w-4 h-4 text-[#c8a45a]" /> Crónicas de la Mesa Arcana
                             </h2>
-                            <p className="text-[10px] font-garamond italic text-[#c8a45a]/80">
-                                Partida: #{id.slice(0, 8)} • Narrada por la Inteligencia Arcana
+                            <p className="text-[10px] font-garamond text-[#c8a45a]/80">
+                                Partida #{id.slice(0, 8)}
                             </p>
                         </div>
                     </div>
                     <UserNav />
                 </div>
 
-                {/* Tablero de pergamino con rebordes */}
+                {/* Tablero de pergamino */}
                 <div className="flex-1 relative overflow-hidden p-2 md:p-4 bg-[#18110c] flex flex-col">
                     <div className="flex-1 relative rounded-xl border-2 border-[#8a6a3e] bg-pergamino-real shadow-[inset_0_0_30px_rgba(61,39,22,0.4)] flex flex-col overflow-hidden">
                         <DragonCorner position="top-left" size={28} />
@@ -502,35 +484,12 @@ export default function PartidaEnVivo({ params }) {
 
                         {/* Mensajes del chat */}
                         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 fade-edges">
-                            {/* Proclama inicial cuando el chat está vacío */}
+                            {/* Mensaje sutil si el chat está recién iniciado */}
                             {historial.length === 0 && !procesando && (
-                                <div className="flex flex-col items-center justify-center min-h-[340px] text-center p-6 space-y-4">
-                                    <div className="relative p-8 rounded-2xl bg-[#e3d0ab]/40 border-2 border-[#8a6a3e] max-w-md shadow-xl backdrop-blur-xs">
-                                        <DragonCorner position="top-left" size={20} />
-                                        <DragonCorner position="top-right" size={20} />
-                                        <DragonCorner position="bottom-left" size={20} />
-                                        <DragonCorner position="bottom-right" size={20} />
-
-                                        <div className="flex justify-center mb-3">
-                                            <VitralDM pensando={false} />
-                                        </div>
-
-                                        <BannerTitulo className="mb-3">
-                                            Compañía Reunida
-                                        </BannerTitulo>
-
-                                        <p className="font-garamond text-base text-[#3d2716] italic leading-relaxed mb-5">
-                                            Los dados están listos y los vientos del destino soplan a vuestro favor.
-                                            El Dungeon Master aguarda vuestra señal para narrar el inicio de la gesta.
-                                        </p>
-
-                                        <button
-                                            onClick={() => enviarMensajeTexto("¡Comencemos la aventura! Describe la escena inicial de dónde nos encontramos y qué desafío tenemos enfrente.")}
-                                            className="px-6 py-3 bg-gradient-to-r from-[#7b1f1f] via-[#991b1b] to-[#7b1f1f] hover:brightness-110 text-[#fef08a] font-cinzel font-bold text-xs uppercase tracking-widest rounded-xl shadow-lg border border-[#c8a45a] transition-all hover:scale-105 flex items-center gap-2 mx-auto cursor-pointer"
-                                        >
-                                            <Sword size={14} /> Comenzar Aventura
-                                        </button>
-                                    </div>
+                                <div className="flex flex-col items-center justify-center min-h-[240px] text-center p-6 space-y-3">
+                                    <p className="font-garamond italic text-[#5c3a21] text-base max-w-md">
+                                        El pergamino está en blanco. Escribí tu primera acción o pregunta abajo para que el Dungeon Master comience la narración.
+                                    </p>
                                 </div>
                             )}
 
@@ -552,7 +511,7 @@ export default function PartidaEnVivo({ params }) {
                                 {ultimoMensajeRef.current && (
                                     <button
                                         onClick={() => enviarMensajeTexto(ultimoMensajeRef.current)}
-                                        className="ml-3 px-3 py-1 bg-red-700 hover:bg-red-600 text-white rounded-lg font-cinzel font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 shrink-0 transition-colors"
+                                        className="ml-3 px-3 py-1 bg-red-700 hover:bg-red-600 text-white rounded-lg font-cinzel font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
                                     >
                                         <RotateCcw size={12} /> Reintentar
                                     </button>
@@ -563,24 +522,23 @@ export default function PartidaEnVivo({ params }) {
                         {/* Banner de combate por turnos */}
                         {enCombate && personajeTurnoActivo && (
                             <div className="mx-4 mb-2 p-2.5 bg-[#241510] border-2 border-[#8a6a3e] rounded-xl text-xs flex justify-between items-center text-[#fef08a] shadow-md">
-                                <span className="flex items-center gap-2 font-cinzel font-bold">
-                                    <Sword size={15} className="text-[#fef08a] animate-pulse" />
+                                <span className="font-cinzel font-bold">
                                     Turno de acción: <span className="text-white underline decoration-[#c8a45a] underline-offset-2">{personajeTurnoActivo.nombre}</span>
-                                    {personajeTurnoActivo.usuario_id === usuarioActual?.id ? ' (¡Es tu turno!)' : ''}
+                                    {personajeTurnoActivo.usuario_id === usuarioActual?.id ? ' (Es tu turno)' : ''}
                                 </span>
                                 {!esMiTurno && (
                                     <span className="text-[11px] font-garamond text-[#c8a45a] italic">
-                                        Esperando su acción o tirada...
+                                        Esperando su acción...
                                     </span>
                                 )}
                             </div>
                         )}
 
                         {/* Input de Chat */}
-                        <div className="p-3 md:p-4 bg-[#e3d0ab]/40 border-t-2 border-[#8a6a3e]/60 backdrop-blur-xs flex flex-col gap-2 z-10">
+                        <div className="p-3 md:p-4 bg-[#e3d0ab]/40 border-t-2 border-[#8a6a3e]/60 flex flex-col gap-2 z-10">
                             {alguienIn && (
-                                <p className="text-xs font-garamond italic text-[#7b1f1f] animate-pulse font-bold ml-2">
-                                    Un compañero está formulando su acción...
+                                <p className="text-xs font-garamond italic text-[#7b1f1f] font-bold ml-2">
+                                    Un compañero está escribiendo...
                                 </p>
                             )}
                             <ChatInput

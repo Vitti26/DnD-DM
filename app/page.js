@@ -10,11 +10,8 @@ import { BannerTitulo } from './components/ui/BannerTitulo';
 import { VitralDM } from './components/ui/VitralDM';
 import {
     UserPlus,
-    Dices,
     Menu,
-    Sword,
     ScrollText,
-    Sparkles,
     Shield,
     Users
 } from 'lucide-react';
@@ -31,7 +28,7 @@ export default function Home() {
         historial, addMensaje,
         resetGame,
         enCombate, setEnCombate,
-        turnoIndex, setTurnoIndex
+        setTurnoIndex
     } = useGameStore();
 
     const [isClient, setIsClient] = useState(false);
@@ -81,7 +78,7 @@ export default function Home() {
                 .from('partidas')
                 .insert([
                     {
-                        nombre_partida: `Aventura de ${jugadores[0]?.nombre || 'Héroes'}`,
+                        nombre_partida: `Partida de ${jugadores[0]?.nombre || 'Héroes'}`,
                         jugadores: jugadores,
                         historial: [],
                         idioma: idioma
@@ -182,7 +179,7 @@ export default function Home() {
 
         } catch (error) {
             console.error("Error:", error);
-            addMensaje({ rol: "dm", texto: "Hubo un error de conexión con el reino arcano." });
+            addMensaje({ rol: "dm", texto: "Hubo un error de conexión con la mesa." });
         } finally {
             setCargando(false);
         }
@@ -207,33 +204,28 @@ export default function Home() {
                 <div className="flex justify-between items-center mb-4 pb-3 border-b border-[#3d2716]">
                     <div className="flex items-center gap-2 text-[#c8a45a]">
                         <UserPlus size={18} />
-                        <h2 className="font-cinzel font-bold uppercase tracking-wider text-xs text-amber-100">Tu Compañía</h2>
+                        <h2 className="font-cinzel font-bold uppercase tracking-wider text-xs text-amber-100">Compañía</h2>
                     </div>
 
                     <button
                         onClick={() => toggleCombate()}
                         className={`text-[10px] font-cinzel px-2.5 py-1 rounded font-bold uppercase tracking-wider transition-all border ${enCombate
-                            ? 'bg-[#7b1f1f] text-[#fef08a] border-[#c8a45a] animate-pulse shadow-[0_0_12px_rgba(123,31,31,0.8)]'
+                            ? 'bg-[#7b1f1f] text-[#fef08a] border-[#c8a45a]'
                             : 'bg-[#241510] text-[#c8a45a] border-[#3d2716] hover:bg-[#3d2716]'
                             }`}
                     >
-                        {enCombate ? '⚔️ Combate' : '⚔️ Iniciar'}
+                        {enCombate ? 'Combate Activo' : 'Modo Combate'}
                     </button>
                 </div>
 
-                <div className="space-y-3.5 flex-1 overflow-y-auto pr-1">
+                <div className="space-y-3 flex-1 overflow-y-auto pr-1">
                     {jugadores.length === 0 ? (
                         <div className="text-center py-8 font-garamond italic text-[#8a6a3e] text-sm">
-                            No hay aventureros en la mesa todavía. Creá uno o elegilo de tu salón de héroes.
+                            No hay aventureros en la mesa todavía. Creá uno o elegilo de tu salón de personajes.
                         </div>
                     ) : (
-                        jugadores.map((j, index) => (
+                        jugadores.map((j) => (
                             <div key={j.id} className="relative">
-                                {enCombate && turnoIndex === index && (
-                                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 text-[#fef08a] animate-bounce z-20">
-                                        <Sword size={18} />
-                                    </div>
-                                )}
                                 <PlayerCard jugador={j} />
                             </div>
                         ))
@@ -246,7 +238,7 @@ export default function Home() {
                             onClick={iniciarNuevaPartida}
                             className="w-full bg-gradient-to-r from-[#7b1f1f] via-[#991b1b] to-[#7b1f1f] hover:brightness-110 text-[#fef08a] p-3 rounded-xl font-cinzel font-bold text-xs uppercase tracking-widest shadow-lg border border-[#c8a45a] transition-all active:scale-95 flex items-center justify-center gap-2 mb-2 cursor-pointer"
                         >
-                            <Sword size={15} /> Iniciar Aventura ({jugadores.length} PJ)
+                            Iniciar Partida ({jugadores.length} PJ)
                         </button>
                     )}
 
@@ -291,9 +283,8 @@ export default function Home() {
                         >
                             <Menu size={22} />
                         </button>
-                        <div className="flex items-center gap-2 font-cinzel font-bold text-base text-[#fef08a]">
-                            <Dices className="w-5 h-5 text-[#c8a45a]" />
-                            <span>Mesa Arcana</span>
+                        <div className="font-cinzel font-bold text-base text-[#fef08a] tracking-wider">
+                            Mesa Arcana
                         </div>
                     </div>
 
@@ -313,10 +304,10 @@ export default function Home() {
                                     <VitralDM pensando={false} className="scale-90" />
                                 </div>
                                 <BannerTitulo>
-                                    Reunir a la Compañía
+                                    Compañía de Aventureros
                                 </BannerTitulo>
                                 <p className="font-garamond italic text-[#5c3a21] text-sm mt-1">
-                                    Alista a tus aventureros para sumergirte en las crónicas de D&D 5e narradas por la IA
+                                    Alista los héroes que participarán en la mesa de juego
                                 </p>
                             </div>
 
@@ -325,7 +316,7 @@ export default function Home() {
                                 <div className="mb-5 p-4 bg-[#e3d0ab]/50 border border-[#8a6a3e]/50 rounded-xl">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-xs font-cinzel font-bold text-[#7b1f1f] uppercase tracking-wider flex items-center gap-1.5">
-                                            <Shield size={14} className="text-[#c8a45a]" /> Tus Héroes del Salón
+                                            <Shield size={14} className="text-[#c8a45a]" /> Personajes Disponibles
                                         </span>
                                         <Link href="/personajes" className="text-[11px] font-cinzel text-[#8a6a3e] hover:text-[#7b1f1f] underline">
                                             Administrar
@@ -358,7 +349,7 @@ export default function Home() {
                             {/* Idioma */}
                             <div className="mb-4">
                                 <label className="text-xs font-cinzel font-bold text-[#3d2716] uppercase tracking-wider block mb-1">
-                                    Idioma de la Narración
+                                    Idioma de la Mesa
                                 </label>
                                 <select
                                     value={idioma}
@@ -374,7 +365,7 @@ export default function Home() {
                             <div className="grid grid-cols-1 gap-3 mb-6 bg-[#e3d0ab]/30 p-4 rounded-xl border border-[#8a6a3e]/30">
                                 <div>
                                     <label className="text-xs font-cinzel font-bold text-[#3d2716] uppercase tracking-wider block mb-1">
-                                        Nombre del Héroe
+                                        Nombre del Personaje
                                     </label>
                                     <input
                                         value={nombreTmp}
@@ -424,7 +415,7 @@ export default function Home() {
                                         onClick={iniciarNuevaPartida}
                                         className="w-full py-3.5 bg-gradient-to-r from-[#7b1f1f] via-[#991b1b] to-[#7b1f1f] hover:brightness-110 text-[#fef08a] font-cinzel font-bold rounded-xl text-sm uppercase tracking-widest shadow-xl border-2 border-[#c8a45a] transition-transform hover:scale-102 flex items-center justify-center gap-2 cursor-pointer"
                                     >
-                                        <Sparkles size={16} /> ¡Comenzar la Campaña! ({jugadores.length} PJ)
+                                        Iniciar Partida ({jugadores.length} PJ)
                                     </button>
                                 </div>
                             )}

@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Dices, LogIn, Mail, Lock, AlertCircle, ArrowLeft } from 'lucide-react';
+import { DragonCorner } from '../components/ui/DragonCorner';
+import { BannerTitulo } from '../components/ui/BannerTitulo';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -46,73 +48,78 @@ export default function LoginPage() {
     };
 
     return (
-        <main className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">
+        <main className="min-h-screen w-full bg-[#18110c] text-amber-100 flex flex-col justify-center items-center p-4 relative overflow-hidden">
             {/* Fondo ambiental */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-950/20 via-slate-950 to-slate-950 pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#4a1212]/30 via-[#18110c] to-[#18110c] pointer-events-none" />
 
             <div className="w-full max-w-md z-10">
                 {/* Volver */}
                 <Link
                     href="/"
-                    className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-white mb-6 transition-colors font-semibold"
+                    className="inline-flex items-center gap-2 text-xs font-cinzel text-[#c8a45a] hover:text-[#fef08a] mb-6 transition-colors font-semibold"
                 >
-                    <ArrowLeft size={14} /> Volver al inicio
+                    <ArrowLeft size={14} /> Volver a la Mesa
                 </Link>
 
-                <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-md">
+                <div className="relative rounded-2xl border-2 border-[#8a6a3e] bg-pergamino-real p-8 shadow-[0_10px_40px_rgba(0,0,0,0.8)] text-[#241510]">
+                    <DragonCorner position="top-left" size={28} />
+                    <DragonCorner position="top-right" size={28} />
+                    <DragonCorner position="bottom-left" size={28} />
+                    <DragonCorner position="bottom-right" size={28} />
+
                     {/* Header */}
-                    <div className="flex flex-col items-center text-center mb-8">
-                        <div className="w-12 h-12 bg-amber-900/40 border border-amber-700/50 rounded-xl flex items-center justify-center text-amber-400 mb-3 shadow-inner">
+                    <div className="flex flex-col items-center text-center mb-6">
+                        <div className="w-12 h-12 bg-[#241510] border-2 border-[#8a6a3e] rounded-xl flex items-center justify-center text-[#c8a45a] mb-2 shadow-inner">
                             <Dices size={28} />
                         </div>
-                        <h1 className="text-2xl font-bold tracking-tight text-white font-serif">
+                        <BannerTitulo>
                             Mesa Arcana
-                        </h1>
-                        <p className="text-xs text-slate-400 mt-1">
+                        </BannerTitulo>
+                        <p className="text-xs font-garamond italic text-[#5c3a21] mt-1">
                             Iniciá sesión para continuar tu crónica de aventuras
                         </p>
                     </div>
 
                     {/* Alerta de error */}
                     {error && (
-                        <div className="mb-6 p-3 bg-red-950/80 border border-red-500/50 rounded-xl text-red-200 text-xs flex items-center gap-2">
-                            <AlertCircle size={16} className="text-red-400 shrink-0" />
-                            <span>{error}</span>
+                        <div className="mb-6 p-3 bg-[#4a1212] border-2 border-red-500 rounded-xl text-red-100 text-xs flex items-center gap-2">
+                            <AlertCircle size={16} className="text-red-300 shrink-0" />
+                            <span className="font-garamond">{error}</span>
                         </div>
                     )}
 
                     {/* Formulario */}
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                            <label className="block text-xs font-cinzel font-bold text-[#3d2716] uppercase tracking-wider mb-1.5">
                                 Correo Electrónico
                             </label>
                             <div className="relative">
-                                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a6a3e]" />
                                 <input
                                     type="email"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="tu@aventurero.com"
-                                    className="w-full bg-slate-950/70 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                                    placeholder="aventurero@reino.com"
+                                    className="w-full bg-[#fbf6ec] border-2 border-[#8a6a3e] rounded-xl pl-10 pr-4 py-2.5 text-sm font-garamond text-[#241510] placeholder-[#8a6a3e]/60 focus:outline-none focus:border-[#7b1f1f] shadow-inner"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                            <label className="block text-xs font-cinzel font-bold text-[#3d2716] uppercase tracking-wider mb-1.5">
                                 Contraseña
                             </label>
                             <div className="relative">
-                                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8a6a3e]" />
                                 <input
                                     type="password"
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-slate-950/70 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                                    className="w-full bg-[#fbf6ec] border-2 border-[#8a6a3e] rounded-xl pl-10 pr-4 py-2.5 text-sm font-garamond text-[#241510] placeholder-[#8a6a3e]/60 focus:outline-none focus:border-[#7b1f1f] shadow-inner"
                                 />
                             </div>
                         </div>
@@ -120,31 +127,29 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={cargando}
-                            className="w-full mt-2 py-3 bg-amber-800 hover:bg-amber-700 active:bg-amber-900 disabled:opacity-50 text-amber-50 font-bold rounded-xl shadow-lg transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
+                            className="w-full mt-4 bg-gradient-to-r from-[#7b1f1f] via-[#991b1b] to-[#7b1f1f] hover:brightness-110 disabled:opacity-50 text-[#fef08a] font-cinzel font-bold py-3 rounded-xl shadow-lg border border-[#c8a45a] flex items-center justify-center gap-2 text-xs uppercase tracking-widest transition-all cursor-pointer active:scale-95"
                         >
                             {cargando ? (
-                                <span>Entrando al gremio...</span>
+                                <span className="animate-pulse">Ingresando al Reino...</span>
                             ) : (
                                 <>
-                                    <LogIn size={16} /> Entrar a la Partida
+                                    <LogIn size={16} /> Entrar a la Taberna
                                 </>
                             )}
                         </button>
                     </form>
 
-                    {/* Footer con link a Registro */}
-                    <div className="mt-8 pt-6 border-t border-slate-800 text-center text-xs text-slate-400">
-                        ¿Todavía no tenés una cuenta?{' '}
-                        <Link
-                            href="/registro"
-                            className="text-amber-400 hover:text-amber-300 font-semibold underline underline-offset-4 ml-1"
-                        >
-                            Registrate acá
-                        </Link>
+                    {/* Footer / Registro */}
+                    <div className="mt-6 pt-4 border-t border-[#8a6a3e]/40 text-center">
+                        <p className="text-xs font-garamond text-[#5c3a21]">
+                            ¿Aún no tenés un héroe registrado?{' '}
+                            <Link href="/registro" className="font-cinzel font-bold text-[#7b1f1f] hover:underline ml-1">
+                                Crear una cuenta
+                            </Link>
+                        </p>
                     </div>
                 </div>
             </div>
         </main>
     );
 }
-
